@@ -12,8 +12,156 @@ gcc -Wall -o 1 huffman.c && ./1
 
 */
 
+/** left&right or byte */
+struct HuffmanNode
+{
+    int byte;
+    unsigned long count;
+    struct HuffmanNode *next;
+    struct HuffmanNode *left;
+    struct HuffmanNode *right;
+};
 int huffman(byte *in, long int len, byte *out, long int max_out, long int *outlen)
 {
+    printf("Creating buffer for counts and counting\n");
+    unsigned long counts[256] = {0};
+    for (unsigned long i = 0; i < len; i++)
+    {
+        counts[in[i]]++;
+    };
+
+    printf("Building initial list\n");
+    struct HuffmanNode *list;
+    struct HuffmanNode *last = NULL;
+    // Lol, if use "byte" then it goes to infinitive loop
+    for (int i = 0; i < 256; i++)
+    {
+        struct HuffmanNode *node = malloc(sizeof(struct HuffmanNode));
+        node->byte = i;
+        node->count = counts[i];
+        node->next = NULL;
+        node->left = NULL;
+        node->right = NULL;
+        if (last == NULL)
+        {
+            last = node;
+            list = node;
+        }
+        else
+        {
+            last->next = node;
+        }
+        last = node;
+    }
+    printf("Transforming list into tree\n");
+    while (1)
+    {
+        struct HuffmanNode *min1 = NULL;
+        struct HuffmanNode *min2 = NULL;
+        struct HuffmanNode *current = list;
+        if (current->next == NULL)
+        {
+            // This should never happen because we check and break in the end of this while loop
+            break;
+        }
+        // Two passes to find two minimums. Not optimal
+        while (current != NULL)
+        {
+            if (min1 == NULL || current->count < min1->count)
+            {
+                min1 = current;
+            }
+            current = current->next;
+        }
+        current = list;
+        while (current != NULL)
+        {
+            if (min2 == NULL || current->count < min2->count)
+            {
+                if (min1 != current)
+                {
+                    min2 = current;
+                }
+            }
+            current = current->next;
+        }
+        printf("Found min1=%i min2=%i\n", min1->byte, min2->byte);
+        struct HuffmanNode *node = malloc(sizeof(struct HuffmanNode));
+        node->count = min1->count + min2->count;
+        node->left = min1;
+        node->right = min2;
+        node->next = NULL;
+
+        // Removing items from list
+        printf("Removing min1 from list\n");
+        struct HuffmanNode *last = NULL;
+        current = list;
+        while (current != NULL)
+        {
+            if (current == min1)
+            {
+                if (last == NULL)
+                {
+                    list = current->next;
+                }
+                else
+                {
+                    last->next = current->next;
+                }
+                break;
+            }
+            last = current;
+            current = current->next;
+        }
+        printf("Removing min2 from list\n");
+        last = NULL;
+        current = list;
+        while (current != NULL)
+        {
+            if (current == min2)
+            {
+                if (last == NULL)
+                {
+                    list = current->next;
+                }
+                else
+                {
+                    last->next = current->next;
+                }
+                break;
+            }
+            last = current;
+            current = current->next;
+        }
+        printf("Add new item to list\n");
+        if (list == NULL)
+        {
+            printf("List is null, tree is built\n");
+            list = node;
+            break;
+        }
+        else
+        {
+            current = list;
+            while (current->next != NULL)
+            {
+                current = current->next;
+            }
+            current->next = node;
+        }
+
+        int i = 0;
+        current = list;
+        while (current != NULL)
+        {
+            i++;
+            current = current->next;
+        }
+        printf("List have %i items\n", i);
+    }
+    // todo: free tree
+    printf("Done\n");
+
     return 0;
 };
 
