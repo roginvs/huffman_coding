@@ -187,11 +187,12 @@ int huffman(byte *in, long len, byte *out, long max_out, long *outlen)
     */
 
     // todo: free tree
-    printf("Done\n");
+
     *outlen = 0;
     *(long *)&out[0] = len;
     *outlen += sizeof(long);
 
+    printf("Done\n");
     return 0;
 };
 
