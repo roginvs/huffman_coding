@@ -21,7 +21,13 @@ struct HuffmanNode
     struct HuffmanNode *left;
     struct HuffmanNode *right;
 };
-int huffman(byte *in, long int len, byte *out, long int max_out, long int *outlen)
+struct PackedNode
+{
+    byte byte;
+    int leftIdx;
+    int rightIdx;
+};
+int huffman(byte *in, long len, byte *out, long max_out, long *outlen)
 {
     printf("Creating buffer for counts and counting\n");
     unsigned long counts[256] = {0};
@@ -159,8 +165,32 @@ int huffman(byte *in, long int len, byte *out, long int max_out, long int *outle
         }
         printf("List have %i items\n", i);
     }
+
+    // We did 255 steps in the previous loop, each step was removing
+    //  two items from list and adding one. So, it always will be 511 nodes
+    /*
+    int nodes_count = 0;
+    void count_nodes(struct HuffmanNode * pos)
+    {
+        nodes_count++;
+        if (pos->left != NULL)
+        {
+            count_nodes(pos->left);
+        };
+        if (pos->right != NULL)
+        {
+            count_nodes(pos->right);
+        };
+    };
+    count_nodes(list);
+    printf("Tree have %i nodes\n", nodes_count);
+    */
+
     // todo: free tree
     printf("Done\n");
+    *outlen = 0;
+    *(long *)&out[0] = len;
+    *outlen += sizeof(long);
 
     return 0;
 };
