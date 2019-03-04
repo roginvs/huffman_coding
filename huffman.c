@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
+#include <unistd.h>
 /*
 
 gcc -Wall -o 1 huffman.c && ./1
@@ -13,21 +13,16 @@ gcc -Wall -o 1 huffman.c && ./1
 */
 
 /** left&right or byte */
-struct HuffmanNode
+struct __attribute__((__packed__)) HuffmanNode
 {
-    int byte;
+    short int byte;
     unsigned long count;
-    struct HuffmanNode *next;
-    struct HuffmanNode *left;
-    struct HuffmanNode *right;
+    short int nextIdx;
+    short int leftIdx;
+    short int rightIdx;
 };
-struct PackedNode
-{
-    byte byte;
-    int leftIdx;
-    int rightIdx;
-};
-int huffman(byte *in, long len, byte *out, long max_out, long *outlen)
+
+int huffman(byte *in, long len, char *out, long max_out, long *outlen)
 {
     printf("Creating buffer for counts and counting\n");
     unsigned long counts[256] = {0};
@@ -36,68 +31,69 @@ int huffman(byte *in, long len, byte *out, long max_out, long *outlen)
         counts[in[i]]++;
     };
 
+    printf("Initializing header");
+    *outlen = 0;
+    *(long *)&out[0] = len;
+    *outlen += sizeof(long);
+    struct HuffmanNode *list = (struct HuffmanNode *)(&out[*outlen]);
+    printf("Size of node is %i\n", sizeof(struct HuffmanNode)); // Lol, it is aligned
+
     printf("Building initial list\n");
-    struct HuffmanNode *list;
-    struct HuffmanNode *last = NULL;
-    // Lol, if use "byte" then it goes to infinitive loop
     for (int i = 0; i < 256; i++)
     {
-        struct HuffmanNode *node = malloc(sizeof(struct HuffmanNode));
-        node->byte = i;
-        node->count = counts[i];
-        node->next = NULL;
-        node->left = NULL;
-        node->right = NULL;
-        if (last == NULL)
-        {
-            last = node;
-            list = node;
-        }
-        else
-        {
-            last->next = node;
-        }
-        last = node;
+
+        list[i].byte = i;
+        list[i].count = counts[i];
+        list[i].leftIdx = -1;
+        list[i].rightIdx = -1;
+        list[i].nextIdx = i < 255 ? i + 1 : -1;
     }
+
+    *outlen += sizeof(struct HuffmanNode) * 511;
+
+    int listIdx = 0;
+    int freeIdx = 256;
     printf("Transforming list into tree\n");
     while (1)
     {
-        struct HuffmanNode *min1 = NULL;
-        struct HuffmanNode *min2 = NULL;
-        struct HuffmanNode *current = list;
-        if (current->next == NULL)
+        int min1idx = -1;
+        int min2idx = -1;
+        int currentIdx = listIdx;
+        if (list[listIdx].nextIdx == -1)
         {
             // This should never happen because we check and break in the end of this while loop
             break;
         }
         // Two passes to find two minimums. Not optimal
-        while (current != NULL)
+        while (currentIdx != -1)
         {
-            if (min1 == NULL || current->count < min1->count)
+            if (min1idx == -1 || list[currentIdx].count < list[min1idx].count)
             {
-                min1 = current;
+                min1idx = currentIdx;
             }
-            current = current->next;
+            currentIdx = list[currentIdx].nextIdx;
         }
-        current = list;
-        while (current != NULL)
+        currentIdx = listIdx;
+        while (currentIdx != -1)
         {
-            if (min2 == NULL || current->count < min2->count)
+            if (min2idx == -1 || list[currentIdx].count < list[min2idx].count)
             {
-                if (min1 != current)
+                if (min1idx != currentIdx)
                 {
-                    min2 = current;
+                    min2idx = currentIdx;
                 }
             }
-            current = current->next;
+            currentIdx = list[currentIdx].nextIdx;
         }
-        printf("Found min1=%i min2=%i\n", min1->byte, min2->byte);
-        struct HuffmanNode *node = malloc(sizeof(struct HuffmanNode));
-        node->count = min1->count + min2->count;
-        node->left = min1;
-        node->right = min2;
-        node->next = NULL;
-
+        printf("Found min1byte=%i min2byte=%i min1idx=%i min2idx=%i\n", list[min1idx].byte, list[min2idx].byte,
+               min1idx, min2idx);
+        list[freeIdx].count = list[min1idx].count + list[min2idx].count;
+        list[freeIdx].leftIdx = min1idx;
+        list[freeIdx].rightIdx = min2idx;
+        list[freeIdx].nextIdx = -1;
+        freeIdx++;
+        break;
+        /*
         // Removing items from list
         printf("Removing min1 from list\n");
         struct HuffmanNode *last = NULL;
@@ -164,6 +160,7 @@ int huffman(byte *in, long len, byte *out, long max_out, long *outlen)
             current = current->next;
         }
         printf("List have %i items\n", i);
+    */
     }
 
     // We did 255 steps in the previous loop, each step was removing
@@ -187,10 +184,6 @@ int huffman(byte *in, long len, byte *out, long max_out, long *outlen)
     */
 
     // todo: free tree
-
-    *outlen = 0;
-    *(long *)&out[0] = len;
-    *outlen += sizeof(long);
 
     printf("Done\n");
     return 0;
@@ -217,9 +210,23 @@ int main()
 
     // not optimal
     long int outlen;
-    long int max_out = sb.st_size;
-    byte *buf = malloc(max_out);
-    int huffman_result = huffman(memblock, sb.st_size, buf, max_out, &outlen);
+    long int max_out = sb.st_size; // TODO: change!
+                                   //byte *buf = malloc(max_out);
+    int fd_out = open("hpmor_ru.html.huffman", O_RDWR | O_CREAT | O_TRUNC, 0666);
+    if (fd_out == -1)
+    {
+        perror("Error opening output file");
+        exit(1);
+    }
+    lseek(fd_out, max_out, SEEK_SET);
+    char *out = mmap(0, max_out, PROT_READ | PROT_WRITE, MAP_SHARED, fd_out, 0);
+    if (out == MAP_FAILED)
+    {
+        perror("Error mmap out file");
+        exit(1);
+    }
+
+    int huffman_result = huffman(memblock, sb.st_size, out, max_out, &outlen);
     if (huffman_result != 0)
     {
         perror("Huffman failed");
@@ -231,5 +238,11 @@ int main()
     {
         perror("Error un-mmapping the file");
     }
+    if (munmap(out, max_out) == -1)
+    {
+        perror("Error un-mmapping the file");
+    }
     close(fd);
+    ftruncate(fd_out, outlen);
+    close(fd_out);
 }
