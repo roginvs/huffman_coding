@@ -91,78 +91,76 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
         list[freeIdx].leftIdx = min1idx;
         list[freeIdx].rightIdx = min2idx;
         list[freeIdx].nextIdx = -1;
-        freeIdx++;
-        break;
-        /*
+
         // Removing items from list
         printf("Removing min1 from list\n");
-        struct HuffmanNode *last = NULL;
-        current = list;
-        while (current != NULL)
+        int previousIdx = -1;
+        currentIdx = listIdx;
+        while (currentIdx != -1)
         {
-            if (current == min1)
+            if (currentIdx == min1idx)
             {
-                if (last == NULL)
+                if (previousIdx == -1)
                 {
-                    list = current->next;
+                    listIdx = list[currentIdx].nextIdx;
                 }
                 else
                 {
-                    last->next = current->next;
+                    list[previousIdx].nextIdx = list[currentIdx].nextIdx;
                 }
                 break;
             }
-            last = current;
-            current = current->next;
+            previousIdx = currentIdx;
+            currentIdx = list[currentIdx].nextIdx;
         }
         printf("Removing min2 from list\n");
-        last = NULL;
-        current = list;
-        while (current != NULL)
+        previousIdx = -1;
+        currentIdx = listIdx;
+        while (currentIdx != -1)
         {
-            if (current == min2)
+            if (currentIdx == min2idx)
             {
-                if (last == NULL)
+                if (previousIdx == -1)
                 {
-                    list = current->next;
+                    listIdx = list[currentIdx].nextIdx;
                 }
                 else
                 {
-                    last->next = current->next;
+                    list[previousIdx].nextIdx = list[currentIdx].nextIdx;
                 }
                 break;
             }
-            last = current;
-            current = current->next;
+            previousIdx = currentIdx;
+            currentIdx = list[currentIdx].nextIdx;
         }
+
         printf("Add new item to list\n");
-        if (list == NULL)
+        if (listIdx == -1)
         {
             printf("List is null, tree is built\n");
-            list = node;
             break;
         }
         else
         {
-            current = list;
-            while (current->next != NULL)
+            currentIdx = listIdx;
+            while (list[currentIdx].nextIdx != -1)
             {
-                current = current->next;
+
+                currentIdx = list[currentIdx].nextIdx;
             }
-            current->next = node;
+            list[currentIdx].nextIdx = freeIdx;
         }
 
         int i = 0;
-        current = list;
-        while (current != NULL)
+        currentIdx = listIdx;
+        while (currentIdx != -1)
         {
             i++;
-            current = current->next;
+            currentIdx = list[currentIdx].nextIdx;
         }
         printf("List have %i items\n", i);
-    */
-    }
-
+        freeIdx++;
+    };
     // We did 255 steps in the previous loop, each step was removing
     //  two items from list and adding one. So, it always will be 511 nodes
     /*
