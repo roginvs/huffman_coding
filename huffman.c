@@ -50,6 +50,8 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
         list[i].nextIdx = i < 255 ? i + 1 : -1;
     }
 
+    printf("WHY IT IS CORRUPTED IN THE END? %i %u ", list[0].byte, list[0].byte);
+    return -1;
     int listIdx = 0;
     int freeIdx = 256;
     printf("Transforming list into tree\n");
