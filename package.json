@@ -18,5 +18,9 @@
   "homepage": "https://github.com/roginvs/huffman_coding#readme",
   "dependencies": {
     "@types/node": "^11.11.8"
+  },
+  "devDependencies": {
+    "ts-node": "^8.0.3",
+    "typescript": "^3.3.4000"
   }
 }

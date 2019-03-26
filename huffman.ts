@@ -1,4 +1,5 @@
 function huffmanEncode(input: Buffer, output: Buffer) {
+    console.info("Calculating bytes frequency");
     const counts = new Array(256).fill(0);
     for (const byte of input) {
         counts[byte]++;
@@ -11,6 +12,7 @@ function huffmanEncode(input: Buffer, output: Buffer) {
         idx?: number; // Index for internal node to pack into header
         count: number;
     }
+    console.info("Building initial list");
     // This is not the most efficient way
     //  We know what each Huffman tree will hold 511 nodes,
     //  so we can initiate an array with 511 items and use
@@ -45,7 +47,7 @@ function huffmanEncode(input: Buffer, output: Buffer) {
 
         // Find a first minimum in list
         while (current) {
-            if (!min1 || min1.count < current.count) {
+            if (!min1 || current.count < min1.count) {
                 min1 = current;
             }
             current = current.next;
@@ -54,7 +56,7 @@ function huffmanEncode(input: Buffer, output: Buffer) {
         // Find a second minimum in list
         current = tree;
         while (current) {
-            if (!min2 || min2.count < current.count) {
+            if (!min2 || current.count < min2.count) {
                 if (current !== min1) {
                     min2 = current;
                 }
@@ -67,6 +69,7 @@ function huffmanEncode(input: Buffer, output: Buffer) {
         if (!min2) {
             throw new Error("Internal error: min2 not found");
         }
+
         // Create a new iternal node
         lastInternalNodeIdx++;
         const node: TreeAndList = {
@@ -124,35 +127,50 @@ function huffmanEncode(input: Buffer, output: Buffer) {
                 }
             }
         }
-    }    
+    }
     console.info("Tree created");
     output.writeInt32LE(input.byteLength, 0);
     // The tree have 256 leaf nodes and 255 internal nodes
     // Bit: 0 - internal, 1 - leaf
     //  if internal, then two childs go next
     //  if leaf, then byte go next
-    
-    tree.idx = 0;
-    function writeBit(byteOffset: number, bitPos: number, bit: 0 | 1) {
+    let bitPos = 0;
+    function writeBit(bit: 0 | 1) {
+        const byteOffset = 8; // A header with size for input and tree
         const targetByte = Math.floor(bitPos / 8);
         const targetBit = bitPos % 8;
         if (bit === 1) {
-            
+            const targetMask = 1 << (7 - targetBit);
+            output[byteOffset + targetByte] =
+                output[byteOffset + targetByte] || targetMask;
+        } else {
+            const targetMask = 255 - (1 << (7 - targetBit));
+            output[byteOffset + targetByte] =
+                output[byteOffset + targetByte] && targetMask;
         }
-        const targetMask = 1 << (7 - targetBit);
-
-        output[byteOffset] =  
+        bitPos++;
     }
+
     function writeHeader(current: TreeAndList) {
+        console.info(current);
         if (current.left && current.right) {
             // it is a internal node
             if (current.idx === undefined) {
-                throw new Error("Internal error")
-            };
-            output[4 + current.idx*2];
+                throw new Error("Internal error");
+            }
+            writeBit(0);
+            writeHeader(current.left);
+            writeHeader(current.right);
+        } else {
+            writeBit(1);
+            for (let i = 0; i < 8; i++) {
+                const bit = current.byte >> (7 - i) && 1;
+                writeBit(bit);
+            }
         }
-    };
+    }
     writeHeader(tree);
+    console.info(`Header bit size = ${bitPos}`);
 }
 
 import * as fs from "fs";
