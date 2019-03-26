@@ -13,7 +13,7 @@ gcc -Wall -o 1 huffman.c && ./1
 */
 
 /** left&right or byte */
-struct __attribute__((__packed__)) HuffmanNode
+struct /*__attribute__((__packed__))*/ HuffmanNode
 {
     short int byte;
     unsigned long count;
@@ -35,7 +35,8 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
     *outlen = 0;
     *(long *)&out[0] = len;
     *outlen += sizeof(long);
-    struct HuffmanNode *list = (struct HuffmanNode *)(&out[*outlen]);
+    struct HuffmanNode *list = (struct HuffmanNode *)malloc(sizeof(struct HuffmanNode) * 511);
+    //struct HuffmanNode *list = (struct HuffmanNode *)(&out[*outlen]);
     printf("Size of node is %i\n", sizeof(struct HuffmanNode)); // Lol, it is aligned
 
     printf("Building initial list\n");
@@ -48,8 +49,6 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
         list[i].rightIdx = -1;
         list[i].nextIdx = i < 255 ? i + 1 : -1;
     }
-
-    *outlen += sizeof(struct HuffmanNode) * 511;
 
     int listIdx = 0;
     int freeIdx = 256;
@@ -180,24 +179,50 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
     count_nodes(list);
     printf("Tree have %i nodes\n", nodes_count);
     */
-    int treeIdx = 510;
-
-    struct StreamNode
-    {
-        unsigned char bitLength; // Ranges are 1..255
-        unsigned char bits[32];  // That's why 32 bytes will be enough
-    };
-    struct StreamNode *bits = (struct StreamNode *)(malloc(sizeof(struct StreamNode) * 256));
-
-    void goTree(int goIdx)
-    {
-        if (list[goIdx].left == -1 && list[goIdx].right == -1)
-        {
-            bits[list[goIdx].byte] =
-        }
-    }
     //
-    free(bits);
+    free(list);
+
+    char currentBit = 0;
+
+    void writeBit(char bit)
+    {
+        if (bit > 0)
+        {
+            char targetMask = 1 << (7 - currentBit);
+            // printf("mask=%x\n", targetMask);
+            // printf("out before=%x\n", out[*outlen]);
+            out[*outlen] = out[*outlen] | targetMask;
+            // printf("out after=%x\n", out[*outlen]);
+        }
+        else
+        {
+            char targetMask = 255 - (1 << (7 - currentBit));
+            out[*outlen] = out[*outlen] & targetMask;
+        }
+        currentBit++;
+        if (currentBit >= 8)
+        {
+            currentBit = 0;
+            *outlen = *outlen + 1;
+        }
+    };
+    writeBit(1);
+    writeBit(1);
+    writeBit(0);
+    writeBit(1);
+    writeBit(0);
+    writeBit(0);
+    writeBit(0);
+    writeBit(1);
+
+    writeBit(1);
+    writeBit(0);
+    writeBit(1);
+    printf("outlen=%lu bit=%i\n", *outlen, currentBit);
+    if (currentBit != 0)
+    {
+        *outlen = *outlen + 1;
+    }
     printf("Done\n");
     return 0;
 };
