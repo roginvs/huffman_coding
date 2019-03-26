@@ -155,6 +155,7 @@ function huffmanEncode(input: Buffer, output: Buffer) {
     function writeHeader(current: TreeAndList) {
         if (current.left && current.right) {
             // it is a internal node
+            console.info(`Writing internal node idx=${current.idx}`);
             if (current.idx === undefined) {
                 throw new Error("Internal error");
             }
