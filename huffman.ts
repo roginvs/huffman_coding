@@ -155,7 +155,11 @@ function huffmanEncode(input: Buffer, output: Buffer) {
     function writeHeader(current: TreeAndList) {
         if (current.left && current.right) {
             // it is a internal node
-            console.info(`Writing internal node idx=${current.idx}`);
+            console.info(
+                `Writing internal node idx=${
+                    current.idx !== undefined ? current.idx + 255 : "err"
+                }`
+            );
             if (current.idx === undefined) {
                 throw new Error("Internal error");
             }
@@ -163,6 +167,7 @@ function huffmanEncode(input: Buffer, output: Buffer) {
             writeHeader(current.left);
             writeHeader(current.right);
         } else {
+            console.info(`Writing leaf node byte=${current.byte}`);
             writeBit(1);
             for (let i = 0; i < 8; i++) {
                 const bit = (current.byte >> (7 - i)) & 1;
