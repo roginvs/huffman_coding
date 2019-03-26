@@ -180,9 +180,24 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
     count_nodes(list);
     printf("Tree have %i nodes\n", nodes_count);
     */
+    int treeIdx = 510;
 
-    // todo: free tree
+    struct StreamNode
+    {
+        unsigned char bitLength; // Ranges are 1..255
+        unsigned char bits[32];
+    };
+    struct StreamNode *bits = (struct StreamNode *)(malloc(sizeof(struct StreamNode) * 256));
 
+    void goTree(int goIdx)
+    {
+        if (list[goIdx].left == -1 && list[goIdx].right == -1)
+        {
+            bits[list[goIdx].byte] =
+        }
+    }
+    //
+    free(bits);
     printf("Done\n");
     return 0;
 };
