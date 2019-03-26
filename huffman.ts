@@ -135,15 +135,15 @@ function huffmanEncode(input: Buffer, output: Buffer) {
     //  if internal, then two childs go next
     //  if leaf, then byte go next
 
-    let currentByte = 8;
+    let currentByte = 4;
     let currentBit = 0;
     function writeBit(bit: 0 | 1) {
         if (bit === 1) {
             const targetMask = 1 << (7 - currentBit);
-            output[currentByte] = output[currentByte] || targetMask;
+            output[currentByte] = output[currentByte] | targetMask;
         } else {
             const targetMask = 255 - (1 << (7 - currentBit));
-            output[currentByte] = output[currentByte] && targetMask;
+            output[currentByte] = output[currentByte] & targetMask;
         }
         currentBit++;
         if (currentBit >= 8) {
@@ -164,14 +164,18 @@ function huffmanEncode(input: Buffer, output: Buffer) {
         } else {
             writeBit(1);
             for (let i = 0; i < 8; i++) {
-                const bit = current.byte >> (7 - i) && 1;
-                writeBit(bit);
+                const bit = (current.byte >> (7 - i)) & 1;
+                writeBit(bit ? 1 : 0);
             }
         }
     }
     writeHeader(tree);
     console.info(`Header is written, byte=${currentByte} bit=${currentBit}`);
 
+    if (currentBit !== 0) {
+        currentByte++;
+    }
+    return currentByte;
     //console.info(`Header bit size = ${bitPos}`);
 }
 
@@ -179,4 +183,4 @@ import * as fs from "fs";
 const input = fs.readFileSync("hpmor_ru.html");
 const output = Buffer.alloc(input.byteLength + 0);
 const outputSize = huffmanEncode(input, output);
-fs.writeFileSync("hpmor_ru.html.huffman", output);
+fs.writeFileSync("hpmor_ru.html.ts.huffman", output.slice(0, outputSize));
