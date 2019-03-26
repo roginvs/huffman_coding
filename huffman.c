@@ -212,14 +212,14 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
         printf("Writing header node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
         if (list[idx].leftIdx != -1 && list[idx].rightIdx != -1)
         {
-            printf("Internal\n");
+            printf("It is Internal\n");
             writeBit(0);
             writeNode(list[idx].leftIdx);
             writeNode(list[idx].rightIdx);
         }
         else
         {
-            printf("Leaf\n");
+            printf("It is Leaf byte=%u\n", list[idx].byte);
             writeBit(1);
             for (int i = 0; i < 8; i++)
             {
