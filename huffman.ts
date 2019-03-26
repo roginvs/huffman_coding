@@ -32,6 +32,7 @@ function huffmanEncode(input: Buffer, output: Buffer) {
         } else {
             last.next = item;
         }
+        last = item;
     }
     if (!tree) {
         throw new Error("Internal error");
@@ -69,7 +70,6 @@ function huffmanEncode(input: Buffer, output: Buffer) {
         if (!min2) {
             throw new Error("Internal error: min2 not found");
         }
-
         // Create a new iternal node
         lastInternalNodeIdx++;
         const node: TreeAndList = {
@@ -134,25 +134,25 @@ function huffmanEncode(input: Buffer, output: Buffer) {
     // Bit: 0 - internal, 1 - leaf
     //  if internal, then two childs go next
     //  if leaf, then byte go next
-    let bitPos = 0;
+
+    let currentByte = 8;
+    let currentBit = 0;
     function writeBit(bit: 0 | 1) {
-        const byteOffset = 8; // A header with size for input and tree
-        const targetByte = Math.floor(bitPos / 8);
-        const targetBit = bitPos % 8;
         if (bit === 1) {
-            const targetMask = 1 << (7 - targetBit);
-            output[byteOffset + targetByte] =
-                output[byteOffset + targetByte] || targetMask;
+            const targetMask = 1 << (7 - currentBit);
+            output[currentByte] = output[currentByte] || targetMask;
         } else {
-            const targetMask = 255 - (1 << (7 - targetBit));
-            output[byteOffset + targetByte] =
-                output[byteOffset + targetByte] && targetMask;
+            const targetMask = 255 - (1 << (7 - currentBit));
+            output[currentByte] = output[currentByte] && targetMask;
         }
-        bitPos++;
+        currentBit++;
+        if (currentBit >= 8) {
+            currentBit = 0;
+            currentByte++;
+        }
     }
 
     function writeHeader(current: TreeAndList) {
-        console.info(current);
         if (current.left && current.right) {
             // it is a internal node
             if (current.idx === undefined) {
@@ -170,10 +170,13 @@ function huffmanEncode(input: Buffer, output: Buffer) {
         }
     }
     writeHeader(tree);
-    console.info(`Header bit size = ${bitPos}`);
+    console.info(`Header is written, byte=${currentByte} bit=${currentBit}`);
+
+    //console.info(`Header bit size = ${bitPos}`);
 }
 
 import * as fs from "fs";
 const input = fs.readFileSync("hpmor_ru.html");
 const output = Buffer.alloc(input.byteLength + 0);
 const outputSize = huffmanEncode(input, output);
+fs.writeFileSync("hpmor_ru.html.huffman", output);
