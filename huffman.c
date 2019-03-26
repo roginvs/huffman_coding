@@ -261,7 +261,7 @@ int main()
     long int outlen;
     long int max_out = sb.st_size + sizeof(long) + sizeof(struct HuffmanNode) * 511;
     //byte *buf = malloc(max_out);
-    int fd_out = open("hpmor_ru.html.huffman", O_RDWR | O_CREAT | O_TRUNC, 0666);
+    int fd_out = open("hpmor_ru.html.c.huffman", O_RDWR | O_CREAT | O_TRUNC, 0666);
     if (fd_out == -1)
     {
         perror("Error opening output file");
