@@ -43,7 +43,7 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
     for (int i = 0; i < 256; i++)
     {
 
-        list[i].byte = i;
+        list[i].byte = (unsigned char)i;
         list[i].count = counts[i];
         list[i].leftIdx = -1;
         list[i].rightIdx = -1;
@@ -84,8 +84,23 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
             }
             currentIdx = list[currentIdx].nextIdx;
         }
-        printf("Found min1byte=%i min2byte=%i min1idx=%i min2idx=%i\n", list[min1idx].byte, list[min2idx].byte,
-               min1idx, min2idx);
+        if (list[min1idx].leftIdx != -1)
+        {
+            printf("MIN1 leaf left=%i right=%i min1idx=%i\n", list[min1idx].leftIdx, list[min1idx].rightIdx, min1idx);
+        }
+        else
+        {
+            printf("MIN1 byte=%i min1idx=%i\n", list[min1idx].byte, min1idx);
+        };
+        if (list[min2idx].leftIdx != -1)
+        {
+            printf("MIN2 leaf left=%i right=%i min1idx=%i\n", list[min2idx].leftIdx, list[min2idx].rightIdx, min2idx);
+        }
+        else
+        {
+            printf("MIN2 byte=%i min2idx=%i\n", list[min2idx].byte, min2idx);
+        };
+
         list[freeIdx].count = list[min1idx].count + list[min2idx].count;
         list[freeIdx].leftIdx = min1idx;
         list[freeIdx].rightIdx = min2idx;
