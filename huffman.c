@@ -206,19 +206,30 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
             *outlen = *outlen + 1;
         }
     };
-    writeBit(1);
-    writeBit(1);
-    writeBit(0);
-    writeBit(1);
-    writeBit(0);
-    writeBit(0);
-    writeBit(0);
-    writeBit(1);
-
-    writeBit(1);
-    writeBit(0);
-    writeBit(1);
-    printf("outlen=%lu bit=%i\n", *outlen, currentBit);
+    printf("Writing header\n");
+    void writeNode(int idx)
+    {
+        printf("Writing header node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
+        if (list[idx].leftIdx != -1 && list[idx].rightIdx != -1)
+        {
+            printf("Internal\n");
+            writeBit(0);
+            writeNode(list[idx].leftIdx);
+            writeNode(list[idx].rightIdx);
+        }
+        else
+        {
+            printf("Leaf\n");
+            writeBit(1);
+            for (int i = 0; i < 8; i++)
+            {
+                char bit = list[idx].byte >> (7 - i) & 1;
+                writeBit(bit);
+            }
+        }
+    };
+    writeNode(510);
+    printf("Header is written,outlen=%lu bit=%i\n", *outlen, currentBit);
     if (currentBit != 0)
     {
         *outlen = *outlen + 1;
