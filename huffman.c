@@ -185,7 +185,7 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
     struct StreamNode
     {
         unsigned char bitLength; // Ranges are 1..255
-        unsigned char bits[32];
+        unsigned char bits[32];  // That's why 32 bytes will be enough
     };
     struct StreamNode *bits = (struct StreamNode *)(malloc(sizeof(struct StreamNode) * 256));
 
