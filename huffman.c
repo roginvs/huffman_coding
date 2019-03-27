@@ -300,7 +300,7 @@ int huffman(unsigned char *in, long len, unsigned char *out, long max_out, long 
             struct StreamNode *right = (struct StreamNode *)(malloc(sizeof(struct StreamNode)));
             memcpy(right, left, sizeof(struct StreamNode));
             writeBitToStreamNode(left, left->bitLength, 0);
-            writeBitToStreamNode(right, right->bitLength, 0);
+            writeBitToStreamNode(right, right->bitLength, 1);
             printf("Bits left=%i right=%i\n", left->bitLength, right->bitLength);
             left->bitLength++;
             right->bitLength++;
@@ -325,7 +325,18 @@ int huffman(unsigned char *in, long len, unsigned char *out, long max_out, long 
     for (unsigned long i = 0; i < len; i++)
     {
         struct StreamNode *node = &bytes[in[i]];
-        //
+        // printf("Byte idx = %lu, val = %x\n", i, in[i]);
+        // printf("Node bitLen=%i\n", node->bitLength);
+        // printf("Node bytes %x %x %x %x", node->bits[0], node->bits[1], node->bits[2], node->bits[3]);
+
+        for (unsigned char bitPos = 0; bitPos < node->bitLength; bitPos++)
+        {
+
+            unsigned char bitBitPos = bitPos & 7;
+            unsigned char bitBytePos = bitPos >> 3;
+            unsigned char bitValue = node->bits[bitBytePos] >> bitBitPos & 1;
+            writeBit(bitValue);
+        }
     };
 
     if (currentBit != 0)
