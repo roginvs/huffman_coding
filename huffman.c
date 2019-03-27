@@ -25,7 +25,7 @@ struct /*__attribute__((__packed__))*/ HuffmanNode
 // Just random values for header
 char magic[] = {85, 92, 110, 65};
 
-int huffman(byte *in, long len, char *out, long max_out, long *outlen)
+int huffman(unsigned char *in, long len, unsigned char *out, long max_out, long *outlen)
 {
     printf("Creating buffer for counts and counting\n");
     unsigned long counts[256] = {0};
@@ -260,13 +260,79 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
         return -1;
     }
     printf("Creating bytes structure\n");
+    struct StreamNode
+    {
+        unsigned char bitLength; // Ranges are 1..255
+        unsigned char bits[32];
+    };
+    struct StreamNode *bytes = (struct StreamNode *)(malloc(sizeof(struct StreamNode) * 256));
+    struct StreamNode *initial = (struct StreamNode *)(malloc(sizeof(struct StreamNode)));
+    initial->bitLength = 0;
+    for (unsigned char i = 0; i < 32; i++)
+    {
+        initial->bits[i] = 0;
+    };
+    void writeBitToStreamNode(struct StreamNode * node, char bitIdx, char bit)
+    {
 
+        unsigned char currentBitStreamNode = bitIdx & 7;
+        unsigned char currentByteStreamNode = bitIdx >> 3;
+        printf("Writing bit bitIdx=%i, bit=%i byte=%i \n", bitIdx, currentBitStreamNode, currentByteStreamNode);
+        if (bit > 0)
+        {
+            char targetMask = 1 << (7 - currentBitStreamNode);
+            node->bits[currentByteStreamNode] = node->bits[currentByteStreamNode] | targetMask;
+        }
+        else
+        {
+            char targetMask = 255 - (1 << (7 - currentBitStreamNode));
+            node->bits[currentByteStreamNode] = node->bits[currentByteStreamNode] & targetMask;
+        };
+    };
+
+    void goTree(int idx, struct StreamNode *path)
+    {
+        printf("In node %i. path len = %i \n", idx, path->bitLength);
+        if (list[idx].leftIdx != -1 && list[idx].rightIdx != -1)
+        {
+            printf("In internal node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
+            struct StreamNode *left = path;
+            struct StreamNode *right = (struct StreamNode *)(malloc(sizeof(struct StreamNode)));
+            memcpy(right, left, sizeof(struct StreamNode));
+            writeBitToStreamNode(left, left->bitLength, 0);
+            writeBitToStreamNode(right, right->bitLength, 0);
+            printf("Bits left=%i right=%i\n", left->bitLength, right->bitLength);
+            left->bitLength++;
+            right->bitLength++;
+            printf("After ++ left=%i right=%i\n", left->bitLength, right->bitLength);
+            goTree(list[idx].leftIdx, left);
+            goTree(list[idx].rightIdx, right);
+        }
+        else
+        {
+            printf("In leaf node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
+            if (idx > 256)
+            {
+                printf("Internal error, wrong idx for leaf node\n");
+            }
+            memcpy(&bytes[idx], path, sizeof(struct StreamNode));
+            free(path);
+        };
+    };
+    goTree(510, initial);
+    free(list);
+    printf("Built a list of bytes, start to write byte stream\n");
+    for (unsigned long i = 0; i < len; i++)
+    {
+        struct StreamNode *node = &bytes[in[i]];
+        //
+    };
 
     if (currentBit != 0)
     {
         *outlen = *outlen + 1;
     }
-    free(list);
+
     printf("Done\n");
     return 0;
 };
@@ -282,7 +348,7 @@ int main()
     struct stat sb;
     fstat(fd, &sb);
     printf("Size: %lu\n", sb.st_size);
-    byte *memblock = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    unsigned char *memblock = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 
     if (memblock == MAP_FAILED)
     {
@@ -301,7 +367,7 @@ int main()
         exit(1);
     }
     lseek(fd_out, max_out, SEEK_SET);
-    char *out = mmap(0, max_out, PROT_READ | PROT_WRITE, MAP_SHARED, fd_out, 0);
+    unsigned char *out = mmap(0, max_out, PROT_READ | PROT_WRITE, MAP_SHARED, fd_out, 0);
     if (out == MAP_FAILED)
     {
         perror("Error mmap out file");
