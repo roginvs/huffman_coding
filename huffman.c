@@ -22,6 +22,9 @@ struct /*__attribute__((__packed__))*/ HuffmanNode
     short int rightIdx;
 };
 
+// Just random values for header
+char magic[] = {85, 92, 110, 65};
+
 int huffman(byte *in, long len, char *out, long max_out, long *outlen)
 {
     printf("Creating buffer for counts and counting\n");
@@ -33,7 +36,13 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
 
     printf("Initializing header");
     *outlen = 0;
-    *(long *)&out[0] = len;
+    out[0] = magic[0];
+    out[1] = magic[1];
+    out[2] = magic[2];
+    out[3] = magic[3];
+    *outlen += 4;
+
+    *(long *)&out[4] = len;
     *outlen += sizeof(long);
     struct HuffmanNode *list = (struct HuffmanNode *)malloc(sizeof(struct HuffmanNode) * 511);
     //struct HuffmanNode *list = (struct HuffmanNode *)(&out[*outlen]);
@@ -245,6 +254,14 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
     };
     writeNode(510);
     printf("Header is written,outlen=%lu bit=%i\n", *outlen, currentBit);
+    if (*outlen != 327 || currentBit != 7)
+    {
+        printf("Internal error");
+        return -1;
+    }
+    printf("Creating bytes structure\n");
+
+
     if (currentBit != 0)
     {
         *outlen = *outlen + 1;
