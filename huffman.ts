@@ -193,7 +193,7 @@ function huffmanEncode(input: Buffer, output: Buffer) {
             const left = path.slice();
             const right = path.slice();
             left.push(0);
-            right.push(0);
+            right.push(1);
             goTree(node.left, left);
             goTree(node.right, right);
         } else {
@@ -202,8 +202,13 @@ function huffmanEncode(input: Buffer, output: Buffer) {
     }
     goTree(tree, []);
     console.info("Writing data");
+    writeBit(0);
+    //console.info(`currentbyte=${currentByte} currentBit=${currentBit}`);
+
     for (const byte of input) {
         const bits = helpers[byte];
+        //console.info(byte, bits, bits.length);
+        //process.exit(0);
         if (!bits) {
             throw new Error("Internal error");
         }

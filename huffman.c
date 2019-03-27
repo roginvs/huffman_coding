@@ -322,19 +322,20 @@ int huffman(unsigned char *in, long len, unsigned char *out, long max_out, long 
     goTree(510, initial);
     free(list);
     printf("Built a list of bytes, start to write byte stream\n");
+    writeBit(0);
     for (unsigned long i = 0; i < len; i++)
     {
         struct StreamNode *node = &bytes[in[i]];
-        // printf("Byte idx = %lu, val = %x\n", i, in[i]);
-        // printf("Node bitLen=%i\n", node->bitLength);
-        // printf("Node bytes %x %x %x %x", node->bits[0], node->bits[1], node->bits[2], node->bits[3]);
-
+        //printf("Byte idx = %lu, val = %x\n", i, in[i]);
+        //printf("Node bitLen=%i\n", node->bitLength);
+        //printf("Node bytes %x %x %x %x", node->bits[0], node->bits[1], node->bits[2], node->bits[3]);
+        //return -1;
         for (unsigned char bitPos = 0; bitPos < node->bitLength; bitPos++)
         {
 
             unsigned char bitBitPos = bitPos & 7;
             unsigned char bitBytePos = bitPos >> 3;
-            unsigned char bitValue = node->bits[bitBytePos] >> bitBitPos & 1;
+            unsigned char bitValue = node->bits[bitBytePos] >> (7 - bitBitPos) & 1;
             writeBit(bitValue);
         }
     };
