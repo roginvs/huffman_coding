@@ -277,6 +277,10 @@ function huffmanDecode(input: Buffer) {
     if (bytePos !== 327 || bitPos !== 7) {
         throw new Error("Internal error");
     }
+    const padder = readBit();
+    if (padder !== 0) {
+        throw new Error("Wrong stream");
+    }
     const out = Buffer.alloc(size);
     let currentByte = 0;
     while (currentByte < size) {
@@ -308,14 +312,14 @@ ts-node -T huffman.ts
 
 */
 
-/*
 import * as fs from "fs";
 const input = fs.readFileSync("hpmor_ru.html.c.huffman");
 const output = huffmanDecode(input);
 fs.writeFileSync("hpmor_ru.html.ts.decoded", output);
-*/
+/*
 import * as fs from "fs";
 const input = fs.readFileSync("hpmor_ru.html");
 const output = Buffer.alloc(input.byteLength + 1000);
 const outputSize = huffmanEncode(input, output);
 fs.writeFileSync("hpmor_ru.html.ts.huffman", output.slice(0, outputSize));
+*/
