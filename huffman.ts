@@ -129,13 +129,17 @@ function huffmanEncode(input: Buffer, output: Buffer) {
         }
     }
     console.info("Tree created");
-    output.writeInt32LE(input.byteLength, 0);
+    output[0] = 85;
+    output[1] = 92;
+    output[2] = 110;
+    output[3] = 65;
+    output.writeInt32LE(input.byteLength, 4);
     // The tree have 256 leaf nodes and 255 internal nodes
     // Bit: 0 - internal, 1 - leaf
     //  if internal, then two childs go next
     //  if leaf, then byte go next
 
-    let currentByte = 4;
+    let currentByte = 8;
     let currentBit = 0;
     function writeBit(bit: 0 | 1) {
         if (bit === 1) {
@@ -177,16 +181,136 @@ function huffmanEncode(input: Buffer, output: Buffer) {
     }
     writeHeader(tree);
     console.info(`Header is written, byte=${currentByte} bit=${currentBit}`);
+    if (currentByte !== 327 || currentBit !== 7) {
+        throw new Error("Internal error");
+    }
+    console.info(`Creating byte helper`);
+    type HelperNode = number[];
 
-    if (currentBit !== 0) {
+    const helpers: HelperNode[] = [];
+    function goTree(node: TreeAndList, path: HelperNode) {
+        if (node.left && node.right) {
+            const left = path.slice();
+            const right = path.slice();
+            left.push(0);
+            right.push(0);
+            goTree(node.left, left);
+            goTree(node.right, right);
+        } else {
+            helpers[node.byte] = path;
+        }
+    }
+    goTree(tree, []);
+    console.info("Writing data");
+    for (const byte of input) {
+        const bits = helpers[byte];
+        if (!bits) {
+            throw new Error("Internal error");
+        }
+        for (const bit of bits) {
+            writeBit(bit ? 1 : 0);
+        }
+    }
+
+    if (currentBit > 0) {
         currentByte++;
     }
     return currentByte;
     //console.info(`Header bit size = ${bitPos}`);
 }
 
+function huffmanDecode(input: Buffer) {
+    if (
+        input[0] !== 85 ||
+        input[1] !== 92 ||
+        input[2] !== 110 ||
+        input[3] !== 65
+    ) {
+        throw new Error("Wrong header");
+    }
+    const size = input.readInt32LE(4);
+    console.info(`Output size = ${size}`);
+    interface HuffmanNode {
+        left?: HuffmanNode;
+        right?: HuffmanNode;
+        byte?: number;
+    }
+    const tree: HuffmanNode = {};
+    let bytePos = 8;
+    let bitPos = 0;
+    function readBit() {
+        const bit = (input[bytePos] >> (7 - bitPos)) & 1;
+        bitPos++;
+        if (bitPos >= 8) {
+            bytePos++;
+            bitPos = 0;
+        }
+        return bit;
+    }
+    function readTree(node: HuffmanNode) {
+        const type = readBit();
+        if (type === 0) {
+            console.info("Got internal node");
+            const left: HuffmanNode = {};
+            const right: HuffmanNode = {};
+            node.left = left;
+            node.right = right;
+            readTree(left);
+            readTree(right);
+        } else {
+            let byte = 0;
+            for (let i = 0; i < 8; i++) {
+                const bit = readBit();
+                byte += bit > 0 ? 2 ** (7 - i) : 0;
+            }
+            console.info(`Got leaf node byte=${byte}`);
+            node.byte = byte;
+        }
+    }
+    readTree(tree);
+    console.info(`Tree read done`);
+    if (bytePos !== 327 || bitPos !== 7) {
+        throw new Error("Internal error");
+    }
+    const out = Buffer.alloc(size);
+    let currentByte = 0;
+    while (currentByte < size) {
+        let node: HuffmanNode = tree;
+        while (node.byte === undefined) {
+            const route = readBit();
+            if (route === 0) {
+                if (node.left === undefined) {
+                    throw new Error("Internal error");
+                }
+                node = node.left;
+            } else {
+                if (node.right === undefined) {
+                    throw new Error("Internal error");
+                }
+                node = node.right;
+            }
+        }
+        out[currentByte] = node.byte;
+        currentByte++;
+    }
+    console.info("Written");
+    return out;
+}
+
+/*
+
+ts-node -T huffman.ts
+
+*/
+
+/*
+import * as fs from "fs";
+const input = fs.readFileSync("hpmor_ru.html.c.huffman");
+const output = huffmanDecode(input);
+fs.writeFileSync("hpmor_ru.html.ts.decoded", output);
+*/
 import * as fs from "fs";
 const input = fs.readFileSync("hpmor_ru.html");
-const output = Buffer.alloc(input.byteLength + 0);
+const output = Buffer.alloc(input.byteLength + 1000);
 const outputSize = huffmanEncode(input, output);
 fs.writeFileSync("hpmor_ru.html.ts.huffman", output.slice(0, outputSize));
