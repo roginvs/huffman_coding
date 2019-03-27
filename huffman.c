@@ -50,8 +50,6 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
         list[i].nextIdx = i < 255 ? i + 1 : -1;
     }
 
-    printf("WHY IT IS CORRUPTED IN THE END? %i %u ", list[0].byte, list[0].byte);
-    return -1;
     int listIdx = 0;
     int freeIdx = 256;
     printf("Transforming list into tree\n");
@@ -177,6 +175,7 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
         printf("List have %i items\n", i);
         freeIdx++;
     };
+
     // We did 255 steps in the previous loop, each step was removing
     //  two items from list and adding one. So, it always will be 511 nodes
     /*
@@ -197,7 +196,6 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
     printf("Tree have %i nodes\n", nodes_count);
     */
     //
-    free(list);
 
     char currentBit = 0;
 
@@ -251,6 +249,7 @@ int huffman(byte *in, long len, char *out, long max_out, long *outlen)
     {
         *outlen = *outlen + 1;
     }
+    free(list);
     printf("Done\n");
     return 0;
 };
