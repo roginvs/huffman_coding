@@ -338,7 +338,8 @@ int huffman(unsigned char *in, long len, unsigned char *out, long max_out, long 
             writeBit(bitValue);
         }
     };
-
+    printf("Input written\n");
+    free(bytes);
     if (currentBit != 0)
     {
         *outlen = *outlen + 1;
