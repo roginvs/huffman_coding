@@ -29,4 +29,4 @@ ts-node -T main.ts decode some-input-encoded-file some-output-decoded-file
 
 # WebAssembly версия
 
-Собирается с emscripten в `buildWeb.sh`.
+Собирается с emscripten в `buildWeb.sh`, доступна по адресу <https://roginvs.github.io/huffman_coding/web/>
