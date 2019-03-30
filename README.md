@@ -1,11 +1,13 @@
 # Huffman архиватор, C-версия
 
-Архиватор находится в `huffman.c`, CLI оболочка в `main.c`. Собирается через gcc:
+Архиватор находится в `huffman.c`, CLI оболочка в `main.c`. Собирается через gcc на Windows с mingw:
 
 ```
 gcc -Wall -o main main.c
 ./main some-input-file some-output-encoded-file
 ```
+
+Теоретически должно собираться так же и на Linux
 
 # Huffman архиватор и разархиватор, TypeScript версия для nodejs
 
