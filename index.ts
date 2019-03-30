@@ -107,10 +107,10 @@ async function start() {
                     `_emscripten_resize_heap is not implemented, want ${size} memory`
                 );
             },
-            _emscripten_memcpy_big(dest: any, src: any, num: any) {
-                console.info(`Copy memory ${dest} ${src} ${num}`);
-                heapu8.set(heapu8.subarray(src, src + num), dest);
-            },
+            //_emscripten_memcpy_big(dest: any, src: any, num: any) {
+            //    console.info(`Copy memory ${dest} ${src} ${num}`);
+            //    heapu8.set(heapu8.subarray(src, src + num), dest);
+            //},
             _emscripten_get_heap_size() {
                 console.info(`Get total heap size`);
                 return TOTAL_MEMORY;

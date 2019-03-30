@@ -10,14 +10,14 @@ for f in "zero" "one" "fibonachi10" "fibonachi30" "hpmor_ru.html"; do
    rm "test/$f.huffman" 
  fi
  echo "Packing 'test/$f' with C packer"
- ./1 "test/$f" "test/$f.tmp" >/dev/null 
+ ./1 "test/$f" "test/$f.tmp"
  echo "Packing $f with TS packer"
- ./node_modules/.bin/ts-node -T main.ts encode "test/$f" "test/$f.huffman" >/dev/null
+ ./node_modules/.bin/ts-node -T main.ts encode "test/$f" "test/$f.huffman"
  echo "Comparing C and TS" 
  cmp -l "test/$f.tmp" "test/$f.huffman" 
  rm "test/$f.tmp"
  echo "Unpacking test/$f.huffman"
- ./node_modules/.bin/ts-node -T main.ts decode "test/$f.huffman" "test/$f.tmp" >/dev/null
+ ./node_modules/.bin/ts-node -T main.ts decode "test/$f.huffman" "test/$f.tmp"
  echo "Comparing unpacked and original"
  cmp -l "test/$f.tmp" "test/$f" 
  rm "test/$f.huffman"

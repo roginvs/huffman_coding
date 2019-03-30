@@ -461,7 +461,7 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        TOTAL_MEMORY = 65536 * 2000;
+                        TOTAL_MEMORY = 65536 * 1000;
                         console.info("Starting WebAssembly with memory=" + TOTAL_MEMORY);
                         memory = new WebAssembly.Memory({
                             initial: TOTAL_MEMORY / 65536
@@ -488,10 +488,10 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
                                     console.info("_emscripten_resize_heap is not implemented, want " + size + " memory");
                                     throw new Error("_emscripten_resize_heap is not implemented, want " + size + " memory");
                                 },
-                                _emscripten_memcpy_big: function (dest, src, num) {
-                                    console.info("Copy memory " + dest + " " + src + " " + num);
-                                    heapu8.set(heapu8.subarray(src, src + num), dest);
-                                },
+                                //_emscripten_memcpy_big(dest: any, src: any, num: any) {
+                                //    console.info(`Copy memory ${dest} ${src} ${num}`);
+                                //    heapu8.set(heapu8.subarray(src, src + num), dest);
+                                //},
                                 _emscripten_get_heap_size: function () {
                                     console.info("Get total heap size");
                                     return TOTAL_MEMORY;
