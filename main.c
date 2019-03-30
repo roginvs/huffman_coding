@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
     };
-    long int outlen;
+    unsigned long outlen;
     unsigned char *out = huffman_encode(memblock, sb.st_size, &outlen);
     if (out == NULL)
     {

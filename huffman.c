@@ -1,9 +1,11 @@
 #include <stdlib.h>
 
 // Workarounds for webAssembly
-#ifdef EMSCRIPTEN_VERSION
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
 #define printf \
     ;
+
 void memcpy(void *dest, void *src, int size)
 {
     for (int index = 0; index < size; index++)
@@ -11,13 +13,15 @@ void memcpy(void *dest, void *src, int size)
         ((char *)dest)[index] = ((char *)src)[index];
     }
 }
+
 #else
 #include <stdio.h>
 #include <string.h>
+#define EMSCRIPTEN_KEEPALIVE
 #endif
 
 /** left&right or byte */
-struct /*__attribute__((__packed__))*/ HuffmanNode
+struct HuffmanNode
 {
     short int byte;
     unsigned long count;
@@ -29,7 +33,106 @@ struct /*__attribute__((__packed__))*/ HuffmanNode
 // Just random values for header
 char magic[] = {85, 92, 110, 65};
 
-unsigned char *huffman_encode(unsigned char *in, long len, long *outlen)
+struct StreamNode
+{
+    unsigned char bitLength; // Ranges are 1..255
+    unsigned char bits[32];
+};
+void writeBitToStreamNode(struct StreamNode *node, char bitIdx, char bit)
+{
+
+    unsigned char currentBitStreamNode = bitIdx & 7;
+    unsigned char currentByteStreamNode = bitIdx >> 3;
+    printf("Writing bit bitIdx=%i, bit=%i byte=%i \n", bitIdx, currentBitStreamNode, currentByteStreamNode);
+    if (bit > 0)
+    {
+        char targetMask = 1 << (7 - currentBitStreamNode);
+        node->bits[currentByteStreamNode] = node->bits[currentByteStreamNode] | targetMask;
+    }
+    else
+    {
+        char targetMask = 255 - (1 << (7 - currentBitStreamNode));
+        node->bits[currentByteStreamNode] = node->bits[currentByteStreamNode] & targetMask;
+    };
+};
+
+void goTreeForStream(struct HuffmanNode *list, struct StreamNode *bytes, int idx, struct StreamNode *path)
+{
+    printf("In node %i. path len = %i \n", idx, path->bitLength);
+    if (list[idx].leftIdx != -1 && list[idx].rightIdx != -1)
+    {
+        printf("In internal node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
+        struct StreamNode *left = path;
+        struct StreamNode *right = (struct StreamNode *)(malloc(sizeof(struct StreamNode)));
+        memcpy(right, left, sizeof(struct StreamNode));
+        writeBitToStreamNode(left, left->bitLength, 0);
+        writeBitToStreamNode(right, right->bitLength, 1);
+        printf("Bits left=%i right=%i\n", left->bitLength, right->bitLength);
+        left->bitLength++;
+        right->bitLength++;
+        printf("After ++ left=%i right=%i\n", left->bitLength, right->bitLength);
+        goTreeForStream(list, bytes, list[idx].leftIdx, left);
+        goTreeForStream(list, bytes, list[idx].rightIdx, right);
+    }
+    else
+    {
+        printf("In leaf node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
+        if (idx > 256)
+        {
+            printf("Internal error, wrong idx for leaf node\n");
+        }
+        memcpy(&bytes[idx], path, sizeof(struct StreamNode));
+        free(path);
+    };
+};
+
+void writeBit(unsigned char *out, unsigned long *outlen, unsigned char *currentBit, char bit)
+{
+    if (bit > 0)
+    {
+        char targetMask = 1 << (7 - *currentBit);
+        // printf("mask=%x\n", targetMask);
+        // printf("out before=%x\n", out[*outlen]);
+        out[*outlen] = out[*outlen] | targetMask;
+        // printf("out after=%x\n", out[*outlen]);
+    }
+    else
+    {
+        char targetMask = 255 - (1 << (7 - *currentBit));
+        out[*outlen] = out[*outlen] & targetMask;
+    }
+    *currentBit = *currentBit + 1;
+    if (*currentBit >= 8)
+    {
+        *currentBit = 0;
+        *outlen = *outlen + 1;
+    }
+};
+
+void writeHeaderNode(struct HuffmanNode *list, unsigned char *out, unsigned long *outlen, unsigned char *currentBit, int idx)
+{
+    printf("Writing header node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
+    if (list[idx].leftIdx != -1 && list[idx].rightIdx != -1)
+    {
+        printf("It is Internal\n");
+        writeBit(out, outlen, currentBit, 0);
+        writeHeaderNode(list, out, outlen, currentBit, list[idx].leftIdx);
+        writeHeaderNode(list, out, outlen, currentBit, list[idx].rightIdx);
+    }
+    else
+    {
+        printf("It is Leaf byte=%u\n", list[idx].byte);
+        writeBit(out, outlen, currentBit, 1);
+        for (int i = 0; i < 8; i++)
+        {
+            char bit = list[idx].byte >> (7 - i) & 1;
+            writeBit(out, outlen, currentBit, bit);
+        }
+    }
+};
+
+EMSCRIPTEN_KEEPALIVE
+unsigned char *huffman_encode(unsigned char *in, unsigned long len, unsigned long *outlen)
 {
     printf("Creating buffer for counts and counting\n");
     unsigned long counts[256] = {0};
@@ -39,7 +142,7 @@ unsigned char *huffman_encode(unsigned char *in, long len, long *outlen)
     };
 
     struct HuffmanNode *list = (struct HuffmanNode *)malloc(sizeof(struct HuffmanNode) * 511);
-    printf("Size of node is %i\n", sizeof(struct HuffmanNode)); // Lol, it is aligned
+    // printf("Size of node is %i\n", sizeof(struct HuffmanNode)); // Lol, it is aligned
 
     printf("Building initial list\n");
     for (int i = 0; i < 256; i++)
@@ -200,11 +303,6 @@ unsigned char *huffman_encode(unsigned char *in, long len, long *outlen)
     //
 
     printf("Creating bytes structure\n");
-    struct StreamNode
-    {
-        unsigned char bitLength; // Ranges are 1..255
-        unsigned char bits[32];
-    };
     struct StreamNode *bytes = (struct StreamNode *)(malloc(sizeof(struct StreamNode) * 256));
     struct StreamNode *initial = (struct StreamNode *)(malloc(sizeof(struct StreamNode)));
     initial->bitLength = 0;
@@ -212,54 +310,8 @@ unsigned char *huffman_encode(unsigned char *in, long len, long *outlen)
     {
         initial->bits[i] = 0;
     };
-    void writeBitToStreamNode(struct StreamNode * node, char bitIdx, char bit)
-    {
 
-        unsigned char currentBitStreamNode = bitIdx & 7;
-        unsigned char currentByteStreamNode = bitIdx >> 3;
-        printf("Writing bit bitIdx=%i, bit=%i byte=%i \n", bitIdx, currentBitStreamNode, currentByteStreamNode);
-        if (bit > 0)
-        {
-            char targetMask = 1 << (7 - currentBitStreamNode);
-            node->bits[currentByteStreamNode] = node->bits[currentByteStreamNode] | targetMask;
-        }
-        else
-        {
-            char targetMask = 255 - (1 << (7 - currentBitStreamNode));
-            node->bits[currentByteStreamNode] = node->bits[currentByteStreamNode] & targetMask;
-        };
-    };
-
-    void goTree(int idx, struct StreamNode *path)
-    {
-        printf("In node %i. path len = %i \n", idx, path->bitLength);
-        if (list[idx].leftIdx != -1 && list[idx].rightIdx != -1)
-        {
-            printf("In internal node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
-            struct StreamNode *left = path;
-            struct StreamNode *right = (struct StreamNode *)(malloc(sizeof(struct StreamNode)));
-            memcpy(right, left, sizeof(struct StreamNode));
-            writeBitToStreamNode(left, left->bitLength, 0);
-            writeBitToStreamNode(right, right->bitLength, 1);
-            printf("Bits left=%i right=%i\n", left->bitLength, right->bitLength);
-            left->bitLength++;
-            right->bitLength++;
-            printf("After ++ left=%i right=%i\n", left->bitLength, right->bitLength);
-            goTree(list[idx].leftIdx, left);
-            goTree(list[idx].rightIdx, right);
-        }
-        else
-        {
-            printf("In leaf node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
-            if (idx > 256)
-            {
-                printf("Internal error, wrong idx for leaf node\n");
-            }
-            memcpy(&bytes[idx], path, sizeof(struct StreamNode));
-            free(path);
-        };
-    };
-    goTree(510, initial);
+    goTreeForStream(list, bytes, 510, initial);
 
     // TODO: it will overflow on big files
     //   need to implelement overflow safe-multiplication
@@ -283,60 +335,17 @@ unsigned char *huffman_encode(unsigned char *in, long len, long *outlen)
     *(long *)&out[4] = len;
     *outlen += sizeof(long);
 
-    char currentBit = 0;
+    unsigned char currentBit = 0;
 
-    void writeBit(char bit)
-    {
-        if (bit > 0)
-        {
-            char targetMask = 1 << (7 - currentBit);
-            // printf("mask=%x\n", targetMask);
-            // printf("out before=%x\n", out[*outlen]);
-            out[*outlen] = out[*outlen] | targetMask;
-            // printf("out after=%x\n", out[*outlen]);
-        }
-        else
-        {
-            char targetMask = 255 - (1 << (7 - currentBit));
-            out[*outlen] = out[*outlen] & targetMask;
-        }
-        currentBit++;
-        if (currentBit >= 8)
-        {
-            currentBit = 0;
-            *outlen = *outlen + 1;
-        }
-    };
     printf("Writing header\n");
-    void writeNode(int idx)
-    {
-        printf("Writing header node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
-        if (list[idx].leftIdx != -1 && list[idx].rightIdx != -1)
-        {
-            printf("It is Internal\n");
-            writeBit(0);
-            writeNode(list[idx].leftIdx);
-            writeNode(list[idx].rightIdx);
-        }
-        else
-        {
-            printf("It is Leaf byte=%u\n", list[idx].byte);
-            writeBit(1);
-            for (int i = 0; i < 8; i++)
-            {
-                char bit = list[idx].byte >> (7 - i) & 1;
-                writeBit(bit);
-            }
-        }
-    };
-    writeNode(510);
+    writeHeaderNode(list, out, outlen, &currentBit, 510);
     printf("Header is written,outlen=%lu bit=%i\n", *outlen, currentBit);
     if (*outlen != 327 || currentBit != 7)
     {
         printf("Internal error");
         return NULL;
     }
-    writeBit(0);
+    writeBit(out, outlen, &currentBit, 0);
     free(list);
     printf("Built a list of bytes, start to write byte stream\n");
 
@@ -353,14 +362,14 @@ unsigned char *huffman_encode(unsigned char *in, long len, long *outlen)
             unsigned char bitBitPos = bitPos & 7;
             unsigned char bitBytePos = bitPos >> 3;
             unsigned char bitValue = node->bits[bitBytePos] >> (7 - bitBitPos) & 1;
-            writeBit(bitValue);
+            writeBit(out, outlen, &currentBit, bitValue);
         }
     };
     printf("Input written\n");
     free(bytes);
     while (currentBit != 0)
     {
-        writeBit(0);
+        writeBit(out, outlen, &currentBit, 0);
     };
 
     printf("Done\n");
