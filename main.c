@@ -4,7 +4,11 @@
 #include "./huffman.c"
 #include <stdlib.h>
 #include <stdint.h>
+#if defined(_WIN32) || defined(WIN32)
 #include "./mman-win32/mman.c"
+#else
+#include <sys/mman.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -43,14 +47,14 @@ int main(int argc, char *argv[])
             exit(1);
         }
     };
-    unsigned long outlen;
+    uint32_t outlen;
     unsigned char *out = huffman_encode(memblock, sb.st_size, &outlen);
     if (out == NULL)
     {
         perror("Huffman failed");
         exit(1);
     };
-    printf("Original len=%lu, compressed len=%lu\n", sb.st_size, outlen);
+    printf("Original len=%lu, compressed len=%u\n", sb.st_size, outlen);
     int fd_out = open(argv[2], O_RDWR | O_CREAT | O_TRUNC, 0666);
     if (fd_out == -1)
     {

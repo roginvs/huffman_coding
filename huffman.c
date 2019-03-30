@@ -1,12 +1,13 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 // Workarounds for webAssembly
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
 EMSCRIPTEN_KEEPALIVE
-void *my_malloc(unsigned long size)
+void *my_malloc(uint32_t size)
 {
     return malloc(size);
 };
@@ -35,7 +36,7 @@ void debug(char *fmt, ...)
 struct HuffmanNode
 {
     short int byte;
-    unsigned long count;
+    uint32_t count;
     short int nextIdx;
     short int leftIdx;
     short int rightIdx;
@@ -97,7 +98,7 @@ void goTreeForStream(struct HuffmanNode *list, struct StreamNode *bytes, int idx
     };
 };
 
-void writeBit(unsigned char *out, unsigned long *outlen, unsigned char *currentBit, char bit)
+void writeBit(unsigned char *out, uint32_t *outlen, unsigned char *currentBit, char bit)
 {
     if (bit > 0)
     {
@@ -116,11 +117,11 @@ void writeBit(unsigned char *out, unsigned long *outlen, unsigned char *currentB
     if (*currentBit >= 8)
     {
         *currentBit = 0;
-        *outlen = *outlen + 1;
+        *outlen += 1;
     }
 };
 
-void writeHeaderNode(struct HuffmanNode *list, unsigned char *out, unsigned long *outlen, unsigned char *currentBit, int idx)
+void writeHeaderNode(struct HuffmanNode *list, unsigned char *out, uint32_t *outlen, unsigned char *currentBit, int idx)
 {
     debug("Writing header node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
     if (list[idx].leftIdx != -1 && list[idx].rightIdx != -1)
@@ -143,11 +144,11 @@ void writeHeaderNode(struct HuffmanNode *list, unsigned char *out, unsigned long
 };
 
 EMSCRIPTEN_KEEPALIVE
-unsigned char *huffman_encode(unsigned char *in, unsigned long len, unsigned long *outlen)
+unsigned char *huffman_encode(unsigned char *in, uint32_t len, uint32_t *outlen)
 {
     debug("Creating buffer for counts and counting\n");
-    unsigned long counts[256] = {0};
-    for (unsigned long i = 0; i < len; i++)
+    uint32_t counts[256] = {0};
+    for (uint32_t i = 0; i < len; i++)
     {
         counts[in[i]]++;
     };
@@ -326,13 +327,13 @@ unsigned char *huffman_encode(unsigned char *in, unsigned long len, unsigned lon
 
     // TODO: it will overflow on big files
     //   need to implelement overflow safe-multiplication
-    unsigned long total_stream_size_bits = 0;
+    uint32_t total_stream_size_bits = 0;
     for (int i = 0; i < 256; i++)
     {
         total_stream_size_bits += counts[i] * bytes[i].bitLength;
     };
-    unsigned long total_stream_bytes = (total_stream_size_bits >> 3) +
-                                       (((total_stream_size_bits & 7) != 0) ? 1 : 0);
+    uint32_t total_stream_bytes = (total_stream_size_bits >> 3) +
+                                  (((total_stream_size_bits & 7) != 0) ? 1 : 0);
     unsigned char *out = malloc(total_stream_bytes + 328);
 
     debug("Initializing header\n");
@@ -343,8 +344,8 @@ unsigned char *huffman_encode(unsigned char *in, unsigned long len, unsigned lon
     out[3] = magic[3];
     *outlen += 4;
 
-    *(long *)&out[4] = len;
-    *outlen += sizeof(long);
+    *(uint32_t *)&out[4] = len;
+    *outlen += sizeof(uint32_t);
 
     unsigned char currentBit = 0;
 
@@ -353,14 +354,14 @@ unsigned char *huffman_encode(unsigned char *in, unsigned long len, unsigned lon
     debug("Header is written,outlen=%lu bit=%i\n", *outlen, currentBit);
     if (*outlen != 327 || currentBit != 7)
     {
-        debug("Internal error");
+        debug("Internal error with outlen and bits: %i %i\n", *outlen, currentBit);
         return NULL;
     }
     writeBit(out, outlen, &currentBit, 0);
     free(list);
     debug("Built a list of bytes, start to write byte stream\n");
 
-    for (unsigned long i = 0; i < len; i++)
+    for (uint32_t i = 0; i < len; i++)
     {
         struct StreamNode *node = &bytes[in[i]];
         //debug("Byte idx = %lu, val = %x\n", i, in[i]);
