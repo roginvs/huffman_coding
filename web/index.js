@@ -439,6 +439,7 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
                 callback(view, file.name);
             }
             catch (e) {
+                console.warn(e);
                 status(e.message || "ERROR");
             }
         };
@@ -460,7 +461,8 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        TOTAL_MEMORY = 65536 * 1000;
+                        TOTAL_MEMORY = 65536 * 2000;
+                        console.info("Starting WebAssembly with memory=" + TOTAL_MEMORY);
                         memory = new WebAssembly.Memory({
                             initial: TOTAL_MEMORY / 65536
                         });
@@ -562,6 +564,7 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
         });
     }
     start()["catch"](function (e) {
+        console.warn(e);
         status(e.message || "Error");
     });
 });

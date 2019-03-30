@@ -56,6 +56,7 @@ function readFile(
             const view = new Uint8Array(arrayBuf);
             callback(view, file.name);
         } catch (e) {
+            console.warn(e);
             status(e.message || "ERROR");
         }
     };
@@ -75,6 +76,7 @@ function reportTime<T>(run: () => T) {
 }
 async function start() {
     const TOTAL_MEMORY = 65536 * 1000;
+    console.info(`Starting WebAssembly with memory=${TOTAL_MEMORY}`);
     const memory = new WebAssembly.Memory({
         initial: TOTAL_MEMORY / 65536
     });
@@ -196,5 +198,6 @@ async function start() {
         });
 }
 start().catch(e => {
+    console.warn(e);
     status(e.message || "Error");
 });
