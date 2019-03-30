@@ -116,7 +116,7 @@ async function start() {
                         pointerToResultSize + 4
                     ).buffer
                 )[0];
-                console.info(`Packed size=${size}`);
+                console.info(`Packed size = ${size}`);
                 wa._my_free(pointerToResultSize);
                 const packedData = heapu8.slice(
                     pointerToResult,
@@ -124,13 +124,19 @@ async function start() {
                 );
                 wa._my_free(pointerToResult);
                 (window as any).packedData = packedData;
-                const objectUrl = URL.createObjectURL(packedData.buffer);
+                const objectUrl = URL.createObjectURL(
+                    new Blob([packedData.buffer], {
+                        type: "application/octet-stream"
+                    })
+                );
                 const link = document.createElement("a");
                 link.style.display = "none";
                 document.body.appendChild(link);
                 link.href = objectUrl;
                 link.download = file.name + ".huffman";
                 link.click();
+                URL.revokeObjectURL(objectUrl);
+                status("Done");
             } catch (e) {
                 status(e.message || "ERROR");
             }
