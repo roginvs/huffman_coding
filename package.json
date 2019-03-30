@@ -17,9 +17,12 @@
   },
   "homepage": "https://github.com/roginvs/huffman_coding#readme",
   "dependencies": {
-    "@types/node": "^11.11.8"
+    "@types/node": "^11.11.8",
+    "bootstrap": "^4.3.1",
+    "requirejs": "^2.3.6"
   },
   "devDependencies": {
+    "http-server": "^0.11.1",
     "ts-node": "^8.0.3",
     "typescript": "^3.3.4000"
   }

@@ -1,6 +1,4 @@
-import * as fs from "fs";
-
-function huffmanEncode(input: Buffer) {
+export function huffmanEncode(input: Buffer) {
     console.info("Calculating bytes frequency");
     const counts = new Array(256).fill(0);
     for (const byte of input) {
@@ -243,7 +241,7 @@ function huffmanEncode(input: Buffer) {
     //console.info(`Header bit size = ${bitPos}`);
 }
 
-function huffmanDecode(input: Buffer) {
+export function huffmanDecode(input: Buffer) {
     if (
         input[0] !== 85 ||
         input[1] !== 92 ||
@@ -330,19 +328,3 @@ function huffmanDecode(input: Buffer) {
 ts-node -T huffman.ts
 
 */
-
-const [actionType, inName, outName] = process.argv.slice(2);
-if (actionType === "encode") {
-    const input = fs.readFileSync(inName);
-    const output = huffmanEncode(input);
-    fs.writeFileSync(outName, output);
-} else if (actionType === "decode") {
-    const input = fs.readFileSync(inName);
-    const output = huffmanDecode(input);
-    fs.writeFileSync(outName, output);
-} else {
-    console.info(
-        `Usage: ${process.argv[1]} <encode|decode> <in file> <out file>`
-    );
-    process.exit(1);
-}

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Huffman coding</title>
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no"
+        />
+        <meta name="description" content="" />
+        <link href="bootstrap.min.css" rel="stylesheet" />
+    </head>
+
+    <body>
+        <div
+            class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm"
+        >
+            <h5 id="status" class="my-0 mr-md-auto font-weight-normal">
+                Loading
+            </h5>
+        </div>
+
+        <div class="container">
+            <div class="card-deck mb-3 text-center">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h4 class="my-0 font-weight-normal">
+                            Webassembly pack
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <input
+                            type="file"
+                            class="file"
+                            id="pack-wa-input"
+                            style="display: none;"
+                        />
+                        <button
+                            type="button"
+                            class="btn btn-lg btn-block btn-outline-primary"
+                            onclick="document.getElementById('pack-wa-input').click();"
+                        >
+                            Select file
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript" src="require.js"></script>
+        <script type="text/javascript" src="index.js"></script>
+        <script>
+            require(["index"]);
+        </script>
+    </body>
+</html>
