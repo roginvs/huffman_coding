@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 
-#include "./huffman_pack.c"
+#include "./huffman.c"
 #include <stdlib.h>
 #include <stdint.h>
 #include "./mman-win32/mman.c"
