@@ -13,7 +13,16 @@ void memcpy(void *dest, void *src, int size)
         ((char *)dest)[index] = ((char *)src)[index];
     }
 }
-
+EMSCRIPTEN_KEEPALIVE
+void *my_malloc(unsigned long size)
+{
+    return malloc(size);
+};
+EMSCRIPTEN_KEEPALIVE
+void my_free(void *cur)
+{
+    return free(cur);
+};
 #else
 #include <stdio.h>
 #include <string.h>
