@@ -233,8 +233,8 @@ function huffmanEncode(input: Buffer) {
         }
     }
 
-    if (currentBit > 0) {
-        currentByte++;
+    while (currentBit > 0) {
+        writeBit(0);
     }
     if (currentByte !== totalLength) {
         throw new Error(`Internal error ${currentByte} ${totalLength}`);
