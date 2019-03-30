@@ -1,5 +1,8 @@
-export function huffmanEncode(input: Buffer) {
-    console.info("Calculating bytes frequency");
+function debug(str: string) {
+    // console.info(str);
+}
+export function huffmanEncode(input: Uint8Array) {
+    debug("Calculating bytes frequency");
     const counts = new Array(256).fill(0);
     for (const byte of input) {
         counts[byte]++;
@@ -12,7 +15,7 @@ export function huffmanEncode(input: Buffer) {
         idx?: number; // Index for internal node to pack into header
         count: number;
     }
-    console.info("Building initial list");
+    debug("Building initial list");
     // This is not the most efficient way
     //  We know what each Huffman tree will hold 511 nodes,
     //  so we can initiate an array with 511 items and use
@@ -128,9 +131,9 @@ export function huffmanEncode(input: Buffer) {
             }
         }
     }
-    console.info("Tree created");
+    debug("Tree created");
 
-    console.info(`Creating byte helper`);
+    debug(`Creating byte helper`);
     type HelperNode = number[];
 
     const helpers: HelperNode[] = [];
@@ -156,12 +159,15 @@ export function huffmanEncode(input: Buffer) {
         (totalStreamBitLength >> 3) +
         ((totalStreamBitLength & 7) === 0 ? 0 : 1);
     const totalLength = 328 + totalStreamByteLength;
-    const output = Buffer.alloc(totalLength);
+    const output = new Uint8Array(totalLength);
     output[0] = 85;
     output[1] = 92;
     output[2] = 110;
     output[3] = 65;
-    output.writeInt32LE(input.byteLength, 4);
+    output[4] = input.byteLength & 255;
+    output[5] = (input.byteLength >> 8) & 255;
+    output[6] = (input.byteLength >> 16) & 255;
+    output[7] = (input.byteLength >> 24) & 255;
 
     // The tree have 256 leaf nodes and 255 internal nodes
     // Bit: 0 - internal, 1 - leaf
@@ -188,7 +194,7 @@ export function huffmanEncode(input: Buffer) {
     function writeHeader(current: TreeAndList) {
         if (current.left && current.right) {
             // it is a internal node
-            console.info(
+            debug(
                 `Writing internal node idx=${
                     current.idx !== undefined ? current.idx + 255 : "err"
                 }`
@@ -200,7 +206,7 @@ export function huffmanEncode(input: Buffer) {
             writeHeader(current.left);
             writeHeader(current.right);
         } else {
-            console.info(`Writing leaf node byte=${current.byte}`);
+            debug(`Writing leaf node byte=${current.byte}`);
             writeBit(1);
             for (let i = 0; i < 8; i++) {
                 const bit = (current.byte >> (7 - i)) & 1;
@@ -209,19 +215,19 @@ export function huffmanEncode(input: Buffer) {
         }
     }
     writeHeader(tree);
-    console.info(`Header is written, byte=${currentByte} bit=${currentBit}`);
+    debug(`Header is written, byte=${currentByte} bit=${currentBit}`);
     if (currentByte !== 327 || currentBit !== 7) {
         throw new Error(`Internal error: ${currentByte} ${currentBit}`);
     }
     writeBit(0);
 
-    console.info("Writing data");
+    debug("Writing data");
 
-    //console.info(`currentbyte=${currentByte} currentBit=${currentBit}`);
+    //debug(`currentbyte=${currentByte} currentBit=${currentBit}`);
 
     for (const byte of input) {
         const bits = helpers[byte];
-        //console.info(byte, bits, bits.length);
+        //debug(byte, bits, bits.length);
         //process.exit(0);
         if (!bits) {
             throw new Error("Internal error");
@@ -238,10 +244,10 @@ export function huffmanEncode(input: Buffer) {
         throw new Error(`Internal error ${currentByte} ${totalLength}`);
     }
     return output;
-    //console.info(`Header bit size = ${bitPos}`);
+    //debug(`Header bit size = ${bitPos}`);
 }
 
-export function huffmanDecode(input: Buffer) {
+export function huffmanDecode(input: Uint8Array) {
     if (
         input[0] !== 85 ||
         input[1] !== 92 ||
@@ -250,8 +256,9 @@ export function huffmanDecode(input: Buffer) {
     ) {
         throw new Error("Wrong header");
     }
-    const size = input.readInt32LE(4);
-    console.info(`Output size = ${size}`);
+    const size =
+        input[4] + (input[5] << 8) + (input[6] << 16) + (input[7] << 24);
+    debug(`Output size = ${size}`);
     interface HuffmanNode {
         left?: HuffmanNode;
         right?: HuffmanNode;
@@ -272,7 +279,7 @@ export function huffmanDecode(input: Buffer) {
     function readTree(node: HuffmanNode) {
         const type = readBit();
         if (type === 0) {
-            console.info("Got internal node");
+            debug("Got internal node");
             const left: HuffmanNode = {};
             const right: HuffmanNode = {};
             node.left = left;
@@ -285,12 +292,12 @@ export function huffmanDecode(input: Buffer) {
                 const bit = readBit();
                 byte += bit > 0 ? 2 ** (7 - i) : 0;
             }
-            console.info(`Got leaf node byte=${byte}`);
+            debug(`Got leaf node byte=${byte}`);
             node.byte = byte;
         }
     }
     readTree(tree);
-    console.info(`Tree read done`);
+    debug(`Tree read done`);
     if (bytePos !== 327 || bitPos !== 7) {
         throw new Error("Internal error");
     }
@@ -298,7 +305,7 @@ export function huffmanDecode(input: Buffer) {
     if (padder !== 0) {
         throw new Error("Wrong stream");
     }
-    const out = Buffer.alloc(size);
+    const out = new Uint8Array(size);
     let currentByte = 0;
     while (currentByte < size) {
         let node: HuffmanNode = tree;
@@ -319,7 +326,7 @@ export function huffmanDecode(input: Buffer) {
         out[currentByte] = node.byte;
         currentByte++;
     }
-    console.info("Written");
+    debug("Written");
     return out;
 }
 

@@ -45,6 +45,53 @@
                         </button>
                     </div>
                 </div>
+
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h4 class="my-0 font-weight-normal">
+                            TS unpack
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <input
+                            type="file"
+                            class="file"
+                            id="unpack-ts-input"
+                            style="display: none;"
+                            accept=".huffman"
+                        />
+                        <button
+                            type="button"
+                            class="btn btn-lg btn-block btn-outline-primary"
+                            onclick="document.getElementById('unpack-ts-input').click();"
+                        >
+                            Select file
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h4 class="my-0 font-weight-normal">
+                            TS pack
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <input
+                            type="file"
+                            class="file"
+                            id="pack-ts-input"
+                            style="display: none;"
+                        />
+                        <button
+                            type="button"
+                            class="btn btn-lg btn-block btn-outline-primary"
+                            onclick="document.getElementById('pack-ts-input').click();"
+                        >
+                            Select file
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 

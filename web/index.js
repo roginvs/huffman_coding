@@ -46,9 +46,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 define("huffman", ["require", "exports"], function (require, exports) {
     "use strict";
     exports.__esModule = true;
+    function debug(str) {
+        // console.info(str);
+    }
     function huffmanEncode(input) {
         var e_1, _a, e_2, _b, e_3, _c;
-        console.info("Calculating bytes frequency");
+        debug("Calculating bytes frequency");
         var counts = new Array(256).fill(0);
         try {
             for (var input_1 = __values(input), input_1_1 = input_1.next(); !input_1_1.done; input_1_1 = input_1.next()) {
@@ -63,7 +66,7 @@ define("huffman", ["require", "exports"], function (require, exports) {
             }
             finally { if (e_1) throw e_1.error; }
         }
-        console.info("Building initial list");
+        debug("Building initial list");
         // This is not the most efficient way
         //  We know what each Huffman tree will hold 511 nodes,
         //  so we can initiate an array with 511 items and use
@@ -179,8 +182,8 @@ define("huffman", ["require", "exports"], function (require, exports) {
                 }
             }
         }
-        console.info("Tree created");
-        console.info("Creating byte helper");
+        debug("Tree created");
+        debug("Creating byte helper");
         var helpers = [];
         function goTree(node, path) {
             if (node.left && node.right) {
@@ -203,12 +206,15 @@ define("huffman", ["require", "exports"], function (require, exports) {
         var totalStreamByteLength = (totalStreamBitLength >> 3) +
             ((totalStreamBitLength & 7) === 0 ? 0 : 1);
         var totalLength = 328 + totalStreamByteLength;
-        var output = Buffer.alloc(totalLength);
+        var output = new Uint8Array(totalLength);
         output[0] = 85;
         output[1] = 92;
         output[2] = 110;
         output[3] = 65;
-        output.writeInt32LE(input.byteLength, 4);
+        output[4] = input.byteLength & 255;
+        output[5] = (input.byteLength >> 8) & 255;
+        output[6] = (input.byteLength >> 16) & 255;
+        output[7] = (input.byteLength >> 24) & 255;
         // The tree have 256 leaf nodes and 255 internal nodes
         // Bit: 0 - internal, 1 - leaf
         //  if internal, then two childs go next
@@ -233,7 +239,7 @@ define("huffman", ["require", "exports"], function (require, exports) {
         function writeHeader(current) {
             if (current.left && current.right) {
                 // it is a internal node
-                console.info("Writing internal node idx=" + (current.idx !== undefined ? current.idx + 255 : "err"));
+                debug("Writing internal node idx=" + (current.idx !== undefined ? current.idx + 255 : "err"));
                 if (current.idx === undefined) {
                     throw new Error("Internal error");
                 }
@@ -242,7 +248,7 @@ define("huffman", ["require", "exports"], function (require, exports) {
                 writeHeader(current.right);
             }
             else {
-                console.info("Writing leaf node byte=" + current.byte);
+                debug("Writing leaf node byte=" + current.byte);
                 writeBit(1);
                 for (var i = 0; i < 8; i++) {
                     var bit = (current.byte >> (7 - i)) & 1;
@@ -251,18 +257,18 @@ define("huffman", ["require", "exports"], function (require, exports) {
             }
         }
         writeHeader(tree);
-        console.info("Header is written, byte=" + currentByte + " bit=" + currentBit);
+        debug("Header is written, byte=" + currentByte + " bit=" + currentBit);
         if (currentByte !== 327 || currentBit !== 7) {
             throw new Error("Internal error: " + currentByte + " " + currentBit);
         }
         writeBit(0);
-        console.info("Writing data");
+        debug("Writing data");
         try {
-            //console.info(`currentbyte=${currentByte} currentBit=${currentBit}`);
+            //debug(`currentbyte=${currentByte} currentBit=${currentBit}`);
             for (var input_2 = __values(input), input_2_1 = input_2.next(); !input_2_1.done; input_2_1 = input_2.next()) {
                 var byte = input_2_1.value;
                 var bits = helpers[byte];
-                //console.info(byte, bits, bits.length);
+                //debug(byte, bits, bits.length);
                 //process.exit(0);
                 if (!bits) {
                     throw new Error("Internal error");
@@ -296,7 +302,7 @@ define("huffman", ["require", "exports"], function (require, exports) {
             throw new Error("Internal error " + currentByte + " " + totalLength);
         }
         return output;
-        //console.info(`Header bit size = ${bitPos}`);
+        //debug(`Header bit size = ${bitPos}`);
     }
     exports.huffmanEncode = huffmanEncode;
     function huffmanDecode(input) {
@@ -306,8 +312,8 @@ define("huffman", ["require", "exports"], function (require, exports) {
             input[3] !== 65) {
             throw new Error("Wrong header");
         }
-        var size = input.readInt32LE(4);
-        console.info("Output size = " + size);
+        var size = input[4] + (input[5] << 8) + (input[6] << 16) + (input[7] << 24);
+        debug("Output size = " + size);
         var tree = {};
         var bytePos = 8;
         var bitPos = 0;
@@ -323,7 +329,7 @@ define("huffman", ["require", "exports"], function (require, exports) {
         function readTree(node) {
             var type = readBit();
             if (type === 0) {
-                console.info("Got internal node");
+                debug("Got internal node");
                 var left = {};
                 var right = {};
                 node.left = left;
@@ -337,12 +343,12 @@ define("huffman", ["require", "exports"], function (require, exports) {
                     var bit = readBit();
                     byte += bit > 0 ? Math.pow(2, (7 - i)) : 0;
                 }
-                console.info("Got leaf node byte=" + byte);
+                debug("Got leaf node byte=" + byte);
                 node.byte = byte;
             }
         }
         readTree(tree);
-        console.info("Tree read done");
+        debug("Tree read done");
         if (bytePos !== 327 || bitPos !== 7) {
             throw new Error("Internal error");
         }
@@ -350,7 +356,7 @@ define("huffman", ["require", "exports"], function (require, exports) {
         if (padder !== 0) {
             throw new Error("Wrong stream");
         }
-        var out = Buffer.alloc(size);
+        var out = new Uint8Array(size);
         var currentByte = 0;
         while (currentByte < size) {
             var node = tree;
@@ -372,7 +378,7 @@ define("huffman", ["require", "exports"], function (require, exports) {
             out[currentByte] = node.byte;
             currentByte++;
         }
-        console.info("Written");
+        debug("Written");
         return out;
     }
     exports.huffmanDecode = huffmanDecode;
@@ -382,7 +388,7 @@ define("huffman", ["require", "exports"], function (require, exports) {
 ts-node -T huffman.ts
 
 */
-define("index", ["require", "exports"], function (require, exports) {
+define("index", ["require", "exports", "huffman"], function (require, exports, huffman_1) {
     "use strict";
     exports.__esModule = true;
     function byId(id) {
@@ -397,8 +403,57 @@ define("index", ["require", "exports"], function (require, exports) {
         statusDiv.innerText = text;
     }
     var packWaInput = byId("pack-wa-input");
+    var unpackTsInput = byId("unpack-ts-input");
+    var packTsInput = byId("pack-ts-input");
     console.info("Starting");
     status("Starting");
+    function downloadBuffer(name, data) {
+        var objectUrl = URL.createObjectURL(new Blob([data.buffer], {
+            type: "application/octet-stream"
+        }));
+        var link = document.createElement("a");
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.href = objectUrl;
+        link.download = name;
+        link.click();
+        URL.revokeObjectURL(objectUrl);
+    }
+    function readFile(input, callback) {
+        status("Reading file");
+        var file = input.files ? input.files[0] : undefined;
+        if (!file) {
+            status("No file");
+            return;
+        }
+        var reader = new FileReader();
+        reader.onloadend = function (ee) {
+            try {
+                var result = reader.result;
+                if (!result) {
+                    status("File reader error");
+                    return;
+                }
+                var arrayBuf = result;
+                var view = new Uint8Array(arrayBuf);
+                callback(view, file.name);
+            }
+            catch (e) {
+                status(e.message || "ERROR");
+            }
+        };
+        reader.onerror = function () { return status("Reader error"); };
+        reader.readAsArrayBuffer(file);
+    }
+    function reportTime(run) {
+        var started = new Date();
+        var result = run();
+        var ended = new Date();
+        console.info("Finished at " + ended.toISOString() + ", it took " + (ended.getTime() -
+            started.getTime()) /
+            1000 + " seconds");
+        return result;
+    }
     function start() {
         return __awaiter(this, void 0, void 0, function () {
             var TOTAL_MEMORY, memory, heapu8, heap32, DYNAMIC_BASE, DYNAMICTOP_PTR, module, imports, inst, wa;
@@ -457,55 +512,49 @@ define("index", ["require", "exports"], function (require, exports) {
                         status("Ready");
                         console.info("loaded");
                         packWaInput.onchange = function (e) {
-                            status("Busy");
-                            var file = packWaInput.files ? packWaInput.files[0] : undefined;
-                            if (!file) {
-                                status("No file");
-                                return;
-                            }
-                            var reader = new FileReader();
-                            reader.onloadend = function (ee) {
-                                try {
-                                    var result = reader.result;
-                                    if (!result) {
-                                        status("File reader error");
-                                        return;
-                                    }
-                                    var ab = result;
-                                    var abView = new Uint8Array(ab);
-                                    console.info("Source size = " + abView.byteLength);
-                                    status("Allocating");
-                                    var pointerToSrc = wa._my_malloc(abView.byteLength);
-                                    heapu8.set(abView, pointerToSrc);
-                                    var pointerToResultSize = wa._my_malloc(4);
-                                    status("Packing");
-                                    var pointerToResult = wa._huffman_encode(pointerToSrc, abView.byteLength, pointerToResultSize);
-                                    wa._my_free(pointerToSrc);
-                                    status("Packing done");
-                                    var size = new Uint32Array(heapu8.slice(pointerToResultSize, pointerToResultSize + 4).buffer)[0];
-                                    console.info("Packed size = " + size);
-                                    wa._my_free(pointerToResultSize);
-                                    var packedData = heapu8.slice(pointerToResult, pointerToResult + size);
-                                    wa._my_free(pointerToResult);
-                                    window.packedData = packedData;
-                                    var objectUrl = URL.createObjectURL(new Blob([packedData.buffer], {
-                                        type: "application/octet-stream"
-                                    }));
-                                    var link = document.createElement("a");
-                                    link.style.display = "none";
-                                    document.body.appendChild(link);
-                                    link.href = objectUrl;
-                                    link.download = file.name + ".huffman";
-                                    link.click();
-                                    URL.revokeObjectURL(objectUrl);
-                                    status("Done");
-                                }
-                                catch (e) {
-                                    status(e.message || "ERROR");
-                                }
-                            };
-                            reader.onerror = function () { return status("Reader error"); };
-                            reader.readAsArrayBuffer(file);
+                            readFile(packWaInput, function (fileData, fileName) {
+                                console.info("Source size = " + fileData.byteLength);
+                                status("Allocating");
+                                var pointerToSrc = wa._my_malloc(fileData.byteLength);
+                                heapu8.set(fileData, pointerToSrc);
+                                var pointerToResultSize = wa._my_malloc(4);
+                                status("Packing");
+                                var pointerToResult = reportTime(function () {
+                                    return wa._huffman_encode(pointerToSrc, fileData.byteLength, pointerToResultSize);
+                                });
+                                wa._my_free(pointerToSrc);
+                                status("Packing done");
+                                var size = new Uint32Array(heapu8.slice(pointerToResultSize, pointerToResultSize + 4).buffer)[0];
+                                console.info("Packed size = " + size);
+                                wa._my_free(pointerToResultSize);
+                                var packedData = heapu8.slice(pointerToResult, pointerToResult + size);
+                                wa._my_free(pointerToResult);
+                                window.packedData = packedData;
+                                downloadBuffer(fileName + ".huffman", packedData);
+                                status("Done");
+                            });
+                        };
+                        unpackTsInput.onchange = function (e) {
+                            return readFile(unpackTsInput, function (fileData, fileName) {
+                                status("Unpacking");
+                                console.info("Packed size = " + fileData.byteLength);
+                                var unpacked = reportTime(function () { return huffman_1.huffmanDecode(fileData); });
+                                console.info("Unpacked size = " + unpacked.byteLength);
+                                status("Unpacked");
+                                downloadBuffer(fileName.replace(".huffman", ""), unpacked);
+                                status("Done");
+                            });
+                        };
+                        packTsInput.onchange = function (e) {
+                            return readFile(packTsInput, function (fileData, fileName) {
+                                status("Packing");
+                                console.info("Unpacked size = " + fileData.byteLength);
+                                var packed = reportTime(function () { return huffman_1.huffmanEncode(fileData); });
+                                console.info("Packed size = " + packed.byteLength);
+                                status("Packed");
+                                downloadBuffer(fileName + ".huffman", packed);
+                                status("Done");
+                            });
                         };
                         return [2 /*return*/];
                 }
