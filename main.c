@@ -61,7 +61,11 @@ int main(int argc, char *argv[])
         perror("Error opening output file");
         exit(1);
     }
-    lseek(fd_out, outlen, SEEK_SET);
+    if (lseek(fd_out, outlen, SEEK_SET) == -1)
+    {
+        perror("Error with growing file");
+        exit(1);
+    }
     unsigned char *out_file = mmap(0, outlen, PROT_READ | PROT_WRITE, MAP_SHARED, fd_out, 0);
     if (out_file == MAP_FAILED)
     {
