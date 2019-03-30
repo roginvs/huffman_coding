@@ -32,3 +32,5 @@ ts-node -T main.ts decode some-input-encoded-file some-output-decoded-file
 # WebAssembly версия
 
 Собирается с emscripten в `buildWeb.sh`, доступна по адресу <https://roginvs.github.io/huffman_coding/web/>
+Я не использовал webpack чтобы не тянуть большие зависимости.
+Интересно что я из C кода экспортировал malloc/free для того, чтобы иметь возможность получать в javascript буферы в аллокаторе из stdlib.
