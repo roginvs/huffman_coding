@@ -1,6 +1,7 @@
-#include "./huffman_pack.c"
 
 #include <stdio.h>
+
+#include "./huffman_pack.c"
 #include <stdlib.h>
 #include <stdint.h>
 #include "./mman-win32/mman.c"
@@ -15,8 +16,10 @@ gcc -Wall -o 1 main.c && ./1
 
 */
 
-int main()
+int main(int argc, char *argv[])
 {
+    printf("ARGS = %i", argc);
+    return 0;
     int fd = open("hpmor_ru.html", O_RDONLY);
     if (fd == -1)
     {

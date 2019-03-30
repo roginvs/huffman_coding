@@ -1,18 +1,21 @@
 #include <stdlib.h>
 
-#ifndef printf
-#define printf(...) \
-    ;
-#endif
-
 // Workarounds for webAssembly
-void my_memcpy(void *dest, void *src, int size)
+#ifdef EMSCRIPTEN_VERSION
+#define printf \
+    ;
+void memcpy(void *dest, void *src, int size)
 {
     for (int index = 0; index < size; index++)
     {
         ((char *)dest)[index] = ((char *)src)[index];
     }
 }
+#else
+#include <stdio.h>
+#include <string.h>
+#endif
+
 /** left&right or byte */
 struct /*__attribute__((__packed__))*/ HuffmanNode
 {
@@ -235,7 +238,7 @@ unsigned char *huffman_encode(unsigned char *in, long len, long *outlen)
             printf("In internal node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
             struct StreamNode *left = path;
             struct StreamNode *right = (struct StreamNode *)(malloc(sizeof(struct StreamNode)));
-            my_memcpy(right, left, sizeof(struct StreamNode));
+            memcpy(right, left, sizeof(struct StreamNode));
             writeBitToStreamNode(left, left->bitLength, 0);
             writeBitToStreamNode(right, right->bitLength, 1);
             printf("Bits left=%i right=%i\n", left->bitLength, right->bitLength);
@@ -252,7 +255,7 @@ unsigned char *huffman_encode(unsigned char *in, long len, long *outlen)
             {
                 printf("Internal error, wrong idx for leaf node\n");
             }
-            my_memcpy(&bytes[idx], path, sizeof(struct StreamNode));
+            memcpy(&bytes[idx], path, sizeof(struct StreamNode));
             free(path);
         };
     };
