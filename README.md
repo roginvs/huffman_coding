@@ -9,7 +9,7 @@ gcc -Wall -o main main.c
 
 # Huffman архиватор и разархиватор, TypeScript версия для nodejs
 
-Ядро находится в `huffman.ts`, CLI оболочка в `main.ts`. Для запуска нужен Nodejs и typescript, можно предварительно собирать в js либо запускать сразу с `ts-node`
+Ядро находится в `huffman.ts`, CLI оболочка в `main.ts`. Для запуска нужен nodejs и typescript, можно предварительно собирать в js либо запускать сразу с `ts-node`
 
 ```
 ts-node -T main.ts encode some-input-file some-output-encoded-file
