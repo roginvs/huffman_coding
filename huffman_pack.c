@@ -1,17 +1,18 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include "./mman-win32/mman.c"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-/*
 
-gcc -Wall -o 1 huffman.c && ./1
+#ifndef printf
+#define printf(...) \
+    ;
+#endif
 
-*/
-
+// Workarounds for webAssembly
+void my_memcpy(void *dest, void *src, int size)
+{
+    for (int index = 0; index < size; index++)
+    {
+        ((char *)dest)[index] = ((char *)src)[index];
+    }
+}
 /** left&right or byte */
 struct /*__attribute__((__packed__))*/ HuffmanNode
 {
@@ -25,7 +26,7 @@ struct /*__attribute__((__packed__))*/ HuffmanNode
 // Just random values for header
 char magic[] = {85, 92, 110, 65};
 
-int huffman(unsigned char *in, long len, unsigned char *out, long max_out, long *outlen)
+unsigned char *huffman_encode(unsigned char *in, long len, long *outlen)
 {
     printf("Creating buffer for counts and counting\n");
     unsigned long counts[256] = {0};
@@ -34,18 +35,7 @@ int huffman(unsigned char *in, long len, unsigned char *out, long max_out, long 
         counts[in[i]]++;
     };
 
-    printf("Initializing header");
-    *outlen = 0;
-    out[0] = magic[0];
-    out[1] = magic[1];
-    out[2] = magic[2];
-    out[3] = magic[3];
-    *outlen += 4;
-
-    *(long *)&out[4] = len;
-    *outlen += sizeof(long);
     struct HuffmanNode *list = (struct HuffmanNode *)malloc(sizeof(struct HuffmanNode) * 511);
-    //struct HuffmanNode *list = (struct HuffmanNode *)(&out[*outlen]);
     printf("Size of node is %i\n", sizeof(struct HuffmanNode)); // Lol, it is aligned
 
     printf("Building initial list\n");
@@ -206,6 +196,90 @@ int huffman(unsigned char *in, long len, unsigned char *out, long max_out, long 
     */
     //
 
+    printf("Creating bytes structure\n");
+    struct StreamNode
+    {
+        unsigned char bitLength; // Ranges are 1..255
+        unsigned char bits[32];
+    };
+    struct StreamNode *bytes = (struct StreamNode *)(malloc(sizeof(struct StreamNode) * 256));
+    struct StreamNode *initial = (struct StreamNode *)(malloc(sizeof(struct StreamNode)));
+    initial->bitLength = 0;
+    for (unsigned char i = 0; i < 32; i++)
+    {
+        initial->bits[i] = 0;
+    };
+    void writeBitToStreamNode(struct StreamNode * node, char bitIdx, char bit)
+    {
+
+        unsigned char currentBitStreamNode = bitIdx & 7;
+        unsigned char currentByteStreamNode = bitIdx >> 3;
+        printf("Writing bit bitIdx=%i, bit=%i byte=%i \n", bitIdx, currentBitStreamNode, currentByteStreamNode);
+        if (bit > 0)
+        {
+            char targetMask = 1 << (7 - currentBitStreamNode);
+            node->bits[currentByteStreamNode] = node->bits[currentByteStreamNode] | targetMask;
+        }
+        else
+        {
+            char targetMask = 255 - (1 << (7 - currentBitStreamNode));
+            node->bits[currentByteStreamNode] = node->bits[currentByteStreamNode] & targetMask;
+        };
+    };
+
+    void goTree(int idx, struct StreamNode *path)
+    {
+        printf("In node %i. path len = %i \n", idx, path->bitLength);
+        if (list[idx].leftIdx != -1 && list[idx].rightIdx != -1)
+        {
+            printf("In internal node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
+            struct StreamNode *left = path;
+            struct StreamNode *right = (struct StreamNode *)(malloc(sizeof(struct StreamNode)));
+            my_memcpy(right, left, sizeof(struct StreamNode));
+            writeBitToStreamNode(left, left->bitLength, 0);
+            writeBitToStreamNode(right, right->bitLength, 1);
+            printf("Bits left=%i right=%i\n", left->bitLength, right->bitLength);
+            left->bitLength++;
+            right->bitLength++;
+            printf("After ++ left=%i right=%i\n", left->bitLength, right->bitLength);
+            goTree(list[idx].leftIdx, left);
+            goTree(list[idx].rightIdx, right);
+        }
+        else
+        {
+            printf("In leaf node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
+            if (idx > 256)
+            {
+                printf("Internal error, wrong idx for leaf node\n");
+            }
+            my_memcpy(&bytes[idx], path, sizeof(struct StreamNode));
+            free(path);
+        };
+    };
+    goTree(510, initial);
+
+    // TODO: it will overflow on big files
+    //   need to implelement overflow safe-multiplication
+    unsigned long total_stream_size_bits = 0;
+    for (int i = 0; i < 256; i++)
+    {
+        total_stream_size_bits += counts[i] * bytes[i].bitLength;
+    };
+    unsigned long total_stream_bytes = (total_stream_size_bits >> 3) +
+                                       (((total_stream_size_bits & 7) != 0) ? 1 : 0);
+    unsigned char *out = malloc(total_stream_bytes + 328);
+
+    printf("Initializing header\n");
+    *outlen = 0;
+    out[0] = magic[0];
+    out[1] = magic[1];
+    out[2] = magic[2];
+    out[3] = magic[3];
+    *outlen += 4;
+
+    *(long *)&out[4] = len;
+    *outlen += sizeof(long);
+
     char currentBit = 0;
 
     void writeBit(char bit)
@@ -257,79 +331,19 @@ int huffman(unsigned char *in, long len, unsigned char *out, long max_out, long 
     if (*outlen != 327 || currentBit != 7)
     {
         printf("Internal error");
-        return -1;
+        return NULL;
     }
-    printf("Creating bytes structure\n");
-    struct StreamNode
-    {
-        unsigned char bitLength; // Ranges are 1..255
-        unsigned char bits[32];
-    };
-    struct StreamNode *bytes = (struct StreamNode *)(malloc(sizeof(struct StreamNode) * 256));
-    struct StreamNode *initial = (struct StreamNode *)(malloc(sizeof(struct StreamNode)));
-    initial->bitLength = 0;
-    for (unsigned char i = 0; i < 32; i++)
-    {
-        initial->bits[i] = 0;
-    };
-    void writeBitToStreamNode(struct StreamNode * node, char bitIdx, char bit)
-    {
-
-        unsigned char currentBitStreamNode = bitIdx & 7;
-        unsigned char currentByteStreamNode = bitIdx >> 3;
-        printf("Writing bit bitIdx=%i, bit=%i byte=%i \n", bitIdx, currentBitStreamNode, currentByteStreamNode);
-        if (bit > 0)
-        {
-            char targetMask = 1 << (7 - currentBitStreamNode);
-            node->bits[currentByteStreamNode] = node->bits[currentByteStreamNode] | targetMask;
-        }
-        else
-        {
-            char targetMask = 255 - (1 << (7 - currentBitStreamNode));
-            node->bits[currentByteStreamNode] = node->bits[currentByteStreamNode] & targetMask;
-        };
-    };
-
-    void goTree(int idx, struct StreamNode *path)
-    {
-        printf("In node %i. path len = %i \n", idx, path->bitLength);
-        if (list[idx].leftIdx != -1 && list[idx].rightIdx != -1)
-        {
-            printf("In internal node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
-            struct StreamNode *left = path;
-            struct StreamNode *right = (struct StreamNode *)(malloc(sizeof(struct StreamNode)));
-            memcpy(right, left, sizeof(struct StreamNode));
-            writeBitToStreamNode(left, left->bitLength, 0);
-            writeBitToStreamNode(right, right->bitLength, 1);
-            printf("Bits left=%i right=%i\n", left->bitLength, right->bitLength);
-            left->bitLength++;
-            right->bitLength++;
-            printf("After ++ left=%i right=%i\n", left->bitLength, right->bitLength);
-            goTree(list[idx].leftIdx, left);
-            goTree(list[idx].rightIdx, right);
-        }
-        else
-        {
-            printf("In leaf node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
-            if (idx > 256)
-            {
-                printf("Internal error, wrong idx for leaf node\n");
-            }
-            memcpy(&bytes[idx], path, sizeof(struct StreamNode));
-            free(path);
-        };
-    };
-    goTree(510, initial);
+    writeBit(0);
     free(list);
     printf("Built a list of bytes, start to write byte stream\n");
-    writeBit(0);
+
     for (unsigned long i = 0; i < len; i++)
     {
         struct StreamNode *node = &bytes[in[i]];
         //printf("Byte idx = %lu, val = %x\n", i, in[i]);
         //printf("Node bitLen=%i\n", node->bitLength);
         //printf("Node bytes %x %x %x %x", node->bits[0], node->bits[1], node->bits[2], node->bits[3]);
-        //return -1;
+        //return NULL;
         for (unsigned char bitPos = 0; bitPos < node->bitLength; bitPos++)
         {
 
@@ -347,63 +361,5 @@ int huffman(unsigned char *in, long len, unsigned char *out, long max_out, long 
     }
 
     printf("Done\n");
-    return 0;
+    return out;
 };
-
-int main()
-{
-    int fd = open("hpmor_ru.html", O_RDONLY);
-    if (fd == -1)
-    {
-        perror("Error opening input file");
-        exit(1);
-    }
-    struct stat sb;
-    fstat(fd, &sb);
-    printf("Size: %lu\n", sb.st_size);
-    unsigned char *memblock = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-
-    if (memblock == MAP_FAILED)
-    {
-        perror("Error with mmap");
-        exit(1);
-    }
-
-    // not optimal
-    long int outlen;
-    long int max_out = sb.st_size + 328;
-    //byte *buf = malloc(max_out);
-    int fd_out = open("hpmor_ru.html.c.huffman", O_RDWR | O_CREAT | O_TRUNC, 0666);
-    if (fd_out == -1)
-    {
-        perror("Error opening output file");
-        exit(1);
-    }
-    lseek(fd_out, max_out, SEEK_SET);
-    unsigned char *out = mmap(0, max_out, PROT_READ | PROT_WRITE, MAP_SHARED, fd_out, 0);
-    if (out == MAP_FAILED)
-    {
-        perror("Error mmap out file");
-        exit(1);
-    }
-
-    int huffman_result = huffman(memblock, sb.st_size, out, max_out, &outlen);
-    if (huffman_result != 0)
-    {
-        perror("Huffman failed");
-        exit(1);
-    };
-    printf("Original len=%lu, compressed len=%lu", sb.st_size, outlen);
-
-    if (munmap(memblock, sb.st_size) == -1)
-    {
-        perror("Error un-mmapping the file");
-    }
-    if (munmap(out, max_out) == -1)
-    {
-        perror("Error un-mmapping the file");
-    }
-    close(fd);
-    ftruncate(fd_out, outlen);
-    close(fd_out);
-}
