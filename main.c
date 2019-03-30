@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
         printf("Use: %s <in_file> <out_file>\n", argv[0]);
         return 1;
     }
-    printf("Opening input file %s", argv[1]);
+    printf("Opening input file %s\n", argv[1]);
     int fd = open(argv[1], O_RDONLY);
     if (fd == -1)
     {
@@ -33,14 +33,16 @@ int main(int argc, char *argv[])
     struct stat sb;
     fstat(fd, &sb);
     printf("Size: %lu\n", sb.st_size);
-    unsigned char *memblock = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-
-    if (memblock == MAP_FAILED)
+    unsigned char *memblock = NULL;
+    if (sb.st_size != 0)
     {
-        perror("Error with mmap");
-        exit(1);
-    }
-
+        memblock = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+        if (memblock == MAP_FAILED)
+        {
+            perror("Error with mmap");
+            exit(1);
+        }
+    };
     long int outlen;
     unsigned char *out = huffman_encode(memblock, sb.st_size, &outlen);
     if (out == NULL)
@@ -55,7 +57,7 @@ int main(int argc, char *argv[])
         perror("Error opening output file");
         exit(1);
     }
-    // lseek(fd_out, max_out, SEEK_SET);
+    lseek(fd_out, outlen, SEEK_SET);
     unsigned char *out_file = mmap(0, outlen, PROT_READ | PROT_WRITE, MAP_SHARED, fd_out, 0);
     if (out_file == MAP_FAILED)
     {
@@ -66,13 +68,16 @@ int main(int argc, char *argv[])
     printf("Outfile written into %s\n", argv[2]);
     free(out);
 
-    if (munmap(memblock, sb.st_size) == -1)
+    if (sb.st_size != 0)
     {
-        perror("Error un-mmapping the file");
+        if (munmap(memblock, sb.st_size) == -1)
+        {
+            perror("Error un-mmapping input file");
+        }
     }
-    if (munmap(out, outlen) == -1)
+    if (munmap(out_file, outlen) == -1)
     {
-        perror("Error un-mmapping the file");
+        perror("Error un-mmapping output file");
     }
     close(fd);
     ftruncate(fd_out, outlen);

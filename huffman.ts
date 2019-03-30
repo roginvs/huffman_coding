@@ -1,4 +1,6 @@
-function huffmanEncode(input: Buffer, output: Buffer) {
+import * as fs from "fs";
+
+function huffmanEncode(input: Buffer) {
     console.info("Calculating bytes frequency");
     const counts = new Array(256).fill(0);
     for (const byte of input) {
@@ -129,11 +131,40 @@ function huffmanEncode(input: Buffer, output: Buffer) {
         }
     }
     console.info("Tree created");
+
+    console.info(`Creating byte helper`);
+    type HelperNode = number[];
+
+    const helpers: HelperNode[] = [];
+    function goTree(node: TreeAndList, path: HelperNode) {
+        if (node.left && node.right) {
+            const left = path.slice();
+            const right = path.slice();
+            left.push(0);
+            right.push(1);
+            goTree(node.left, left);
+            goTree(node.right, right);
+        } else {
+            helpers[node.byte] = path;
+        }
+    }
+    goTree(tree, []);
+
+    let totalStreamBitLength = 0;
+    for (let i = 0; i < 256; i++) {
+        totalStreamBitLength += helpers[i].length * counts[i];
+    }
+    const totalStreamByteLength =
+        (totalStreamBitLength >> 3) +
+        ((totalStreamBitLength & 7) === 0 ? 0 : 1);
+    const totalLength = 328 + totalStreamByteLength;
+    const output = Buffer.alloc(totalLength);
     output[0] = 85;
     output[1] = 92;
     output[2] = 110;
     output[3] = 65;
     output.writeInt32LE(input.byteLength, 4);
+
     // The tree have 256 leaf nodes and 255 internal nodes
     // Bit: 0 - internal, 1 - leaf
     //  if internal, then two childs go next
@@ -182,27 +213,12 @@ function huffmanEncode(input: Buffer, output: Buffer) {
     writeHeader(tree);
     console.info(`Header is written, byte=${currentByte} bit=${currentBit}`);
     if (currentByte !== 327 || currentBit !== 7) {
-        throw new Error("Internal error");
+        throw new Error(`Internal error: ${currentByte} ${currentBit}`);
     }
-    console.info(`Creating byte helper`);
-    type HelperNode = number[];
-
-    const helpers: HelperNode[] = [];
-    function goTree(node: TreeAndList, path: HelperNode) {
-        if (node.left && node.right) {
-            const left = path.slice();
-            const right = path.slice();
-            left.push(0);
-            right.push(1);
-            goTree(node.left, left);
-            goTree(node.right, right);
-        } else {
-            helpers[node.byte] = path;
-        }
-    }
-    goTree(tree, []);
-    console.info("Writing data");
     writeBit(0);
+
+    console.info("Writing data");
+
     //console.info(`currentbyte=${currentByte} currentBit=${currentBit}`);
 
     for (const byte of input) {
@@ -220,7 +236,10 @@ function huffmanEncode(input: Buffer, output: Buffer) {
     if (currentBit > 0) {
         currentByte++;
     }
-    return currentByte;
+    if (currentByte !== totalLength) {
+        throw new Error(`Internal error ${currentByte} ${totalLength}`);
+    }
+    return output;
     //console.info(`Header bit size = ${bitPos}`);
 }
 
@@ -312,14 +331,18 @@ ts-node -T huffman.ts
 
 */
 
-import * as fs from "fs";
-const input = fs.readFileSync("hpmor_ru.html.c.huffman");
-const output = huffmanDecode(input);
-fs.writeFileSync("hpmor_ru.html.ts.decoded", output);
-/*
-import * as fs from "fs";
-const input = fs.readFileSync("hpmor_ru.html");
-const output = Buffer.alloc(input.byteLength + 1000);
-const outputSize = huffmanEncode(input, output);
-fs.writeFileSync("hpmor_ru.html.ts.huffman", output.slice(0, outputSize));
-*/
+const [actionType, inName, outName] = process.argv.slice(2);
+if (actionType === "encode") {
+    const input = fs.readFileSync(inName);
+    const output = huffmanEncode(input);
+    fs.writeFileSync(outName, output);
+} else if (actionType === "decode") {
+    const input = fs.readFileSync(inName);
+    const output = huffmanDecode(input);
+    fs.writeFileSync(outName, output);
+} else {
+    console.info(
+        `Usage: ${process.argv[1]} <encode|decode> <in file> <out file>`
+    );
+    process.exit(1);
+}

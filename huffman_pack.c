@@ -358,10 +358,10 @@ unsigned char *huffman_encode(unsigned char *in, long len, long *outlen)
     };
     printf("Input written\n");
     free(bytes);
-    if (currentBit != 0)
+    while (currentBit != 0)
     {
-        *outlen = *outlen + 1;
-    }
+        writeBit(0);
+    };
 
     printf("Done\n");
     return out;
