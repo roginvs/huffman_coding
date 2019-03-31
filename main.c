@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
         perror("Error with growing file");
         exit(1);
     }
+    ftruncate(fd_out, outlen);
     unsigned char *out_file = mmap(0, outlen, PROT_READ | PROT_WRITE, MAP_SHARED, fd_out, 0);
     if (out_file == MAP_FAILED)
     {
@@ -88,6 +89,5 @@ int main(int argc, char *argv[])
         perror("Error un-mmapping output file");
     }
     close(fd);
-    ftruncate(fd_out, outlen);
     close(fd_out);
 }
