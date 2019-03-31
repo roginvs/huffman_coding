@@ -35,7 +35,9 @@ function downloadBuffer(name: string, data: Uint8Array) {
     link.href = objectUrl;
     link.download = name;
     link.click();
+    // TODO: Do we need to revoke it here?
     URL.revokeObjectURL(objectUrl);
+    // TODO: We also need to remove "link" from DOM to clear memory
 }
 
 function onInputReadFile(
@@ -91,7 +93,7 @@ async function start() {
     (window as any).heapu8 = heapu8;
     const heap32 = new Int32Array(memory.buffer);
 
-    //heap32[0] = 16;
+    // This magic is takes from original emscripten js files
     const DYNAMIC_BASE = 3824;
     const DYNAMICTOP_PTR = 2560;
     heap32[DYNAMICTOP_PTR >> 2] = DYNAMIC_BASE;
