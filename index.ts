@@ -19,6 +19,10 @@ const packTsInput = byId("pack-ts-input") as HTMLInputElement;
 console.info("Starting");
 status("Starting");
 
+function toggleButtonsDisabled(newStatus: boolean) {
+    document.querySelectorAll("button").forEach(b => (b.disabled = newStatus));
+}
+
 function downloadBuffer(name: string, data: Uint8Array) {
     const objectUrl = URL.createObjectURL(
         new Blob([data.buffer], {
@@ -34,34 +38,37 @@ function downloadBuffer(name: string, data: Uint8Array) {
     URL.revokeObjectURL(objectUrl);
 }
 
-function readFile(
+function onInputReadFile(
     input: HTMLInputElement,
     callback: (fileData: Uint8Array, fileName: string) => void
 ) {
-    status("Reading file");
-    const file = input.files ? input.files[0] : undefined;
-    if (!file) {
-        status("No file");
-        return;
-    }
-    const reader = new FileReader();
-    reader.onloadend = ee => {
-        try {
-            const result = reader.result;
-            if (!result) {
-                status("File reader error");
-                return;
-            }
-            const arrayBuf = result as ArrayBuffer;
-            const view = new Uint8Array(arrayBuf);
-            callback(view, file.name);
-        } catch (e) {
-            console.warn(e);
-            status(e.message || "ERROR");
+    input.onchange = () => {
+        toggleButtonsDisabled(true);
+        status("Reading file");
+        const file = input.files ? input.files[0] : undefined;
+        if (!file) {
+            status("No file");
+            return;
         }
+        const reader = new FileReader();
+        reader.onloadend = ee => {
+            try {
+                const result = reader.result;
+                if (!result) {
+                    status("File reader error");
+                    return;
+                }
+                const arrayBuf = result as ArrayBuffer;
+                const view = new Uint8Array(arrayBuf);
+                callback(view, file.name);
+            } catch (e) {
+                console.warn(e);
+                status(e.message || "ERROR");
+            }
+        };
+        reader.onerror = () => status("Reader error");
+        reader.readAsArrayBuffer(file);
     };
-    reader.onerror = () => status("Reader error");
-    reader.readAsArrayBuffer(file);
 }
 function reportTime<T>(run: () => T) {
     const started = new Date();
@@ -139,63 +146,60 @@ async function start() {
     status("Ready");
     console.info("loaded");
 
-    packWaInput.onchange = e => {
-        readFile(packWaInput, (fileData, fileName) => {
-            console.info(`Source size = ${fileData.byteLength}`);
-            status("Allocating");
-            const pointerToSrc = wa._my_malloc(fileData.byteLength);
-            heapu8.set(fileData, pointerToSrc);
-            const pointerToResultSize = wa._my_malloc(4);
-            status("Packing");
+    onInputReadFile(packWaInput, (fileData, fileName) => {
+        console.info(`Source size = ${fileData.byteLength}`);
+        status("Allocating");
+        const pointerToSrc = wa._my_malloc(fileData.byteLength);
+        heapu8.set(fileData, pointerToSrc);
+        const pointerToResultSize = wa._my_malloc(4);
+        status("Packing");
 
-            const pointerToResult = reportTime(() =>
-                wa._huffman_encode(
-                    pointerToSrc,
-                    fileData.byteLength,
-                    pointerToResultSize
-                )
-            );
+        const pointerToResult = reportTime(() =>
+            wa._huffman_encode(
+                pointerToSrc,
+                fileData.byteLength,
+                pointerToResultSize
+            )
+        );
 
-            wa._my_free(pointerToSrc);
-            status("Packing done");
-            const size = new Uint32Array(
-                heapu8.slice(
-                    pointerToResultSize,
-                    pointerToResultSize + 4
-                ).buffer
-            )[0];
-            console.info(`Packed size = ${size}`);
-            wa._my_free(pointerToResultSize);
-            const packedData = heapu8.slice(
-                pointerToResult,
-                pointerToResult + size
-            );
-            wa._my_free(pointerToResult);
-            (window as any).packedData = packedData;
-            downloadBuffer(fileName + ".huffman", packedData);
-            status("Done");
-        });
-    };
-    unpackTsInput.onchange = e =>
-        readFile(unpackTsInput, (fileData, fileName) => {
-            status("Unpacking");
-            console.info(`Packed size = ${fileData.byteLength}`);
-            const unpacked = reportTime(() => huffmanDecode(fileData));
-            console.info(`Unpacked size = ${unpacked.byteLength}`);
-            status("Unpacked");
-            downloadBuffer(fileName.replace(".huffman", ""), unpacked);
-            status("Done");
-        });
-    packTsInput.onchange = e =>
-        readFile(packTsInput, (fileData, fileName) => {
-            status("Packing");
-            console.info(`Unpacked size = ${fileData.byteLength}`);
-            const packed = reportTime(() => huffmanEncode(fileData));
-            console.info(`Packed size = ${packed.byteLength}`);
-            status("Packed");
-            downloadBuffer(fileName + ".huffman", packed);
-            status("Done");
-        });
+        wa._my_free(pointerToSrc);
+        status("Packing done");
+        const size = new Uint32Array(
+            heapu8.slice(pointerToResultSize, pointerToResultSize + 4).buffer
+        )[0];
+        console.info(`Packed size = ${size}`);
+        wa._my_free(pointerToResultSize);
+        const packedData = heapu8.slice(
+            pointerToResult,
+            pointerToResult + size
+        );
+        wa._my_free(pointerToResult);
+        (window as any).packedData = packedData;
+        downloadBuffer(fileName + ".huffman", packedData);
+        toggleButtonsDisabled(false);
+        status("Done");
+    });
+
+    onInputReadFile(unpackTsInput, (fileData, fileName) => {
+        status("Unpacking");
+        console.info(`Packed size = ${fileData.byteLength}`);
+        const unpacked = reportTime(() => huffmanDecode(fileData));
+        console.info(`Unpacked size = ${unpacked.byteLength}`);
+        status("Unpacked");
+        downloadBuffer(fileName.replace(".huffman", ""), unpacked);
+        toggleButtonsDisabled(false);
+        status("Done");
+    });
+    onInputReadFile(packTsInput, (fileData, fileName) => {
+        status("Packing");
+        console.info(`Unpacked size = ${fileData.byteLength}`);
+        const packed = reportTime(() => huffmanEncode(fileData));
+        console.info(`Packed size = ${packed.byteLength}`);
+        status("Packed");
+        downloadBuffer(fileName + ".huffman", packed);
+        toggleButtonsDisabled(false);
+        status("Done");
+    });
 }
 start().catch(e => {
     console.warn(e);
