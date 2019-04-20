@@ -441,6 +441,8 @@ void readHuffmanTree(
             byte += readBit(in, currentByte, currentBit) << (7 - i);
         }
         tree[currentIdx].byte = byte;
+        tree[currentIdx].leftIdx = -1;
+        tree[currentIdx].rightIdx = -1;
     }
 }
 
@@ -473,14 +475,34 @@ unsigned char *huffman_decode(unsigned char *in, uint32_t *outlen)
         debug("Internal error 2\n");
         return NULL;
     }
-    if (readBit(in, &currentByte, &currentBit) != 0)
+    char controlBit = readBit(in, &currentByte, &currentBit);
+    if (controlBit != 0)
     {
         debug("Control bit is wrong\n");
         return NULL;
     }
     debug("Huffman tree initialized, allocating output %lu bytes\n", *outlen);
     unsigned char *out = (unsigned char *)malloc(*outlen);
-
+    uint32_t currentOutByte = 0;
+    short int currentIdx = 0;
+    while (currentOutByte < *outlen)
+    {
+        currentIdx = 0;
+        while (tree[currentIdx].leftIdx != -1 && tree[currentIdx].rightIdx != -1)
+        {
+            char route = readBit(in, &currentByte, &currentBit);
+            if (route == 0)
+            {
+                currentIdx = tree[currentIdx].leftIdx;
+            }
+            else
+            {
+                currentIdx = tree[currentIdx].rightIdx;
+            }
+        }
+        out[currentOutByte] = tree[currentIdx].byte;
+        currentOutByte += 1;
+    }
     //
 
     //
