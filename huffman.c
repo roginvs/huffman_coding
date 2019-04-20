@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdint.h>
 
+#define SHOW_DEBUG_MESSAGES 1
+
 // Workarounds for webAssembly
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -25,10 +27,12 @@ void my_free(void *cur)
 void debug(char *fmt, ...)
 {
 #ifndef __EMSCRIPTEN__
+#if SHOW_DEBUG_MESSAGES == 1
     va_list args;
     va_start(args, fmt);
-    // vprintf(fmt, args);
+    vprintf(fmt, args);
     va_end(args);
+#endif
 #endif
 }
 
@@ -401,8 +405,10 @@ unsigned char *huffman_decode(unsigned char *in, uint32_t *outlen)
 
     *outlen = *(uint32_t *)&in[4];
 
+    debug("Outfile len = %lu", outlen);
     //
 
     //
     debug("Creating buffer for counts and counting\n");
+    return NULL;
 }

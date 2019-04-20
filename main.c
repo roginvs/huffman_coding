@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        //   out = huffman_decode(memblock, &outlen);
+        out = huffman_decode(memblock, &outlen);
     };
 
     if (out == NULL)
