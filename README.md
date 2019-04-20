@@ -1,6 +1,6 @@
 # Демо алгоритма Хаффмана
 
-Этот репозиторий состоит из реализаций кодирования и раскодирования по алгоритму Хаффмана. Кодирование реализовано на C и Typescript, декодирование только на Typescript. Имеются консольные версии и web-демо.
+Этот репозиторий состоит из реализаций кодирования и раскодирования по алгоритму Хаффмана. Кодирование и декодирование реализовано на C и так же Typescript. Имеются консольные версии и web-демо.
 
 # Формат сжатого файла
 
@@ -10,22 +10,23 @@
 Далее идёт поток битов для самих данных.
 Последний байт дополняется до целого байта нулевыми битами если нужно.
 
-# C-версия (только архиватор)
+# C-версия
 
-Архиватор находится в `huffman.c`, CLI оболочка в `main.c`. Собирается через gcc на Windows (с mingw) или на Linux:
+Архиватор и вся логика находится в `huffman.c`, CLI оболочка в `main.c`. Собирается через gcc на Windows (с mingw) или на Linux:
 
 ```
 gcc -Wall -o main main.c
-./main encode <имя входного файла> <имя выходного файла>
+./main encode <имя входного файла> <имя сжатого выходного файла>
+./main decode <имя сжатого входного файла> <имя выходного файла>
 ```
 
-# TypeScript версия для nodejs, архиватор и разархиватор,
+# TypeScript версия для nodejs
 
 Ядро находится в `huffman.ts`, CLI оболочка в `main.ts`. Для запуска нужен nodejs и typescript, можно предварительно собирать в js либо запускать сразу с `ts-node`
 
 ```
-ts-node -T main.ts encode some-input-file some-output-encoded-file
-ts-node -T main.ts decode some-input-encoded-file some-output-decoded-file
+ts-node -T main.ts encode <some-input-file> <some-output-encoded-file>
+ts-node -T main.ts decode <some-input-encoded-file> <some-output-decoded-file>
 ```
 
 # Тесты
@@ -37,6 +38,7 @@ ts-node -T main.ts decode some-input-encoded-file some-output-decoded-file
 Собирается с emscripten в `buildWeb.sh`, доступна по адресу <https://roginvs.github.io/huffman_coding/web/>
 Я не использовал webpack/react/etc чтобы не тянуть большие зависимости.
 Интересно что я из C кода экспортировал malloc/free для того, чтобы иметь возможность получать в javascript буферы в аллокаторе из stdlib.
+Webassembly реализация работает где-то раза в 4 быстрей чем javascriptю
 
 # TODO
 
