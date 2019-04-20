@@ -100,14 +100,23 @@ int main(int argc, char *argv[])
         exit(1);
     }
     ftruncate(fd_out, outlen);
-    unsigned char *out_file = mmap(0, outlen, PROT_READ | PROT_WRITE, MAP_SHARED, fd_out, 0);
-    if (out_file == MAP_FAILED)
+    unsigned char *out_file;
+    if (outlen != 0)
     {
-        perror("Error mmap out file");
-        exit(1);
+        out_file = mmap(0, outlen, PROT_READ | PROT_WRITE, MAP_SHARED, fd_out, 0);
+
+        if (out_file == MAP_FAILED)
+        {
+            perror("Error mmap out file");
+            exit(1);
+        }
+        memcpy(out_file, out, outlen);
+        printf("Outfile written into %s\n", argv[3]);
     }
-    memcpy(out_file, out, outlen);
-    printf("Outfile written into %s\n", argv[3]);
+    else
+    {
+        printf("Outfile written into %s (zero-length)\n", argv[3]);
+    }
     free(out);
 
     if (sb.st_size != 0)
@@ -117,9 +126,12 @@ int main(int argc, char *argv[])
             perror("Error un-mmapping input file");
         }
     }
-    if (munmap(out_file, outlen) == -1)
+    if (outlen != 0)
     {
-        perror("Error un-mmapping output file");
+        if (munmap(out_file, outlen) == -1)
+        {
+            perror("Error un-mmapping output file");
+        }
     }
     close(fd);
     close(fd_out);

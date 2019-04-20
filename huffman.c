@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#define SHOW_DEBUG_MESSAGES 1
+#define SHOW_DEBUG_MESSAGES 0
 
 // Workarounds for webAssembly
 #ifdef __EMSCRIPTEN__
@@ -503,10 +503,6 @@ unsigned char *huffman_decode(unsigned char *in, uint32_t *outlen)
         out[currentOutByte] = tree[currentIdx].byte;
         currentOutByte += 1;
     }
-    //
-
-    //
-
     free(tree);
     return out;
 }
