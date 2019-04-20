@@ -38,7 +38,7 @@ ts-node -T main.ts decode <some-input-encoded-file> <some-output-decoded-file>
 Собирается с emscripten в `buildWeb.sh`, доступна по адресу <https://roginvs.github.io/huffman_coding/web/>
 Я не использовал webpack/react/etc чтобы не тянуть большие зависимости.
 Интересно что я из C кода экспортировал malloc/free для того, чтобы иметь возможность получать в javascript буферы в аллокаторе из stdlib.
-Webassembly реализация работает где-то раза в 4 быстрей чем javascriptю
+Webassembly реализация работает где-то раза в 4 быстрей чем javascript.
 
 # TODO
 
