@@ -125,6 +125,18 @@ void writeBit(unsigned char *out, uint32_t *outlen, unsigned char *currentBit, c
     }
 };
 
+char readBit(unsigned char *in, uint32_t *currentByte, unsigned char *currentBit)
+{
+    char returnBit = (in[*currentByte] >> (7 - *currentBit)) & 1;
+    *currentBit = *currentBit + 1;
+    if (*currentBit >= 8)
+    {
+        *currentBit = 0;
+        *currentByte += 1;
+    }
+    return returnBit;
+};
+
 void writeHeaderNode(struct HuffmanNode *list, unsigned char *out, uint32_t *outlen, unsigned char *currentBit, int idx)
 {
     debug("Writing header node %i. left=%i right=%i \n", idx, list[idx].leftIdx, list[idx].rightIdx);
@@ -404,11 +416,27 @@ unsigned char *huffman_decode(unsigned char *in, uint32_t *outlen)
     }
 
     *outlen = *(uint32_t *)&in[4];
+    debug("Outfile len = %lu\n", outlen);
 
-    debug("Outfile len = %lu", outlen);
+    unsigned char currentBit = 0;
+    uint32_t currentByte = 8;
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+    debug("\n");
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+
     //
 
     //
-    debug("Creating buffer for counts and counting\n");
+
     return NULL;
 }
