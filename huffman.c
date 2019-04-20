@@ -404,6 +404,46 @@ unsigned char *huffman_encode(unsigned char *in, uint32_t len, uint32_t *outlen)
     return out;
 };
 
+struct HuffmanNodeDecode
+{
+    unsigned char byte;
+    short int leftIdx;
+    short int rightIdx;
+};
+
+void readHuffmanTree(
+    struct HuffmanNodeDecode *tree,
+    short int currentIdx,
+    short int *freeIdx,
+    unsigned char *in,
+    uint32_t *currentByte, unsigned char *currentBit)
+{
+
+    char bit = readBit(in, currentByte, currentBit);
+    if (bit == 0)
+    {
+        debug("Got internal node\n");
+        short int leftIdx = *freeIdx;
+        *freeIdx += 1;
+        short int rightIdx = *freeIdx;
+        *freeIdx += 1;
+        tree[currentIdx].leftIdx = leftIdx;
+        tree[currentIdx].rightIdx = rightIdx;
+        readHuffmanTree(tree, leftIdx, freeIdx, in, currentByte, currentBit);
+        readHuffmanTree(tree, rightIdx, freeIdx, in, currentByte, currentBit);
+    }
+    else
+    {
+        debug("Got leaf node\n");
+        unsigned char byte = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            byte += readBit(in, currentByte, currentBit) << (7 - i);
+        }
+        tree[currentIdx].byte = byte;
+    }
+}
+
 EMSCRIPTEN_KEEPALIVE
 unsigned char *huffman_decode(unsigned char *in, uint32_t *outlen)
 {
@@ -411,32 +451,40 @@ unsigned char *huffman_decode(unsigned char *in, uint32_t *outlen)
     if (in[0] != magic[0] ||
         in[1] != magic[1] || in[2] != magic[2] || in[3] != magic[3])
     {
-        debug("Header is not correct");
+        debug("Header is not correct\n");
         return NULL;
     }
 
     *outlen = *(uint32_t *)&in[4];
-    debug("Outfile len = %lu\n", outlen);
-
     unsigned char currentBit = 0;
     uint32_t currentByte = 8;
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
-    debug("\n");
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
-    debug("Read bit = %i\n", readBit(in, &currentByte, &currentBit));
+
+    struct HuffmanNodeDecode *tree = (struct HuffmanNodeDecode *)malloc(sizeof(struct HuffmanNodeDecode) * 511);
+    short int freeIdx = 1;
+
+    readHuffmanTree(tree, 0, &freeIdx, in, &currentByte, &currentBit);
+    if (currentByte != 327 || currentBit != 7)
+    {
+        debug("Internal error 1\n");
+        return NULL;
+    }
+    if (freeIdx != 511)
+    {
+        debug("Internal error 2\n");
+        return NULL;
+    }
+    if (readBit(in, &currentByte, &currentBit) != 0)
+    {
+        debug("Control bit is wrong\n");
+        return NULL;
+    }
+    debug("Huffman tree initialized, allocating output %lu bytes\n", *outlen);
+    unsigned char *out = (unsigned char *)malloc(*outlen);
 
     //
 
     //
 
-    return NULL;
+    free(tree);
+    return out;
 }

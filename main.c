@@ -80,7 +80,14 @@ int main(int argc, char *argv[])
         perror("Huffman failed");
         exit(1);
     };
-    printf("Original len=%lu, compressed len=%u\n", sb.st_size, outlen);
+    if (ENCODING == 1)
+    {
+        printf("Original len=%lu, compressed len=%u\n", sb.st_size, outlen);
+    }
+    else
+    {
+        printf("Compressed len=%lu, uncompressed len=%u\n", sb.st_size, outlen);
+    }
     int fd_out = open(argv[3], O_RDWR | O_CREAT | O_TRUNC, 0666);
     if (fd_out == -1)
     {
