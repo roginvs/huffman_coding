@@ -1,7 +1,7 @@
 #/bin/bash
 set -e
 echo "Building code"
-gcc -Wall -o 1 main.c
+gcc -Wall -o main main.c
 for f in "zero" "one" "fibonachi10" "fibonachi30" "hpmor_ru.html"; do
  if [ -f "test/$f.tmp" ]; then
    rm "test/$f.tmp" 
@@ -10,7 +10,7 @@ for f in "zero" "one" "fibonachi10" "fibonachi30" "hpmor_ru.html"; do
    rm "test/$f.huffman" 
  fi
  echo "Packing 'test/$f' with C packer"
- ./1 encode "test/$f" "test/$f.tmp"
+ ./main encode "test/$f" "test/$f.tmp"
  echo "Packing $f with TS packer"
  ./node_modules/.bin/ts-node -T main.ts encode "test/$f" "test/$f.huffman"
  echo "Comparing C and TS" 

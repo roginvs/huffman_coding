@@ -27,11 +27,22 @@ int main(int argc, char *argv[])
         printf("Use: %s <in_file> <out_file>\n", argv[0]);
         return 1;
     }
-    if (strcmp(argv[1], "encode") != 0)
+
+    int ENCODING;
+    if (strcmp(argv[1], "encode") == 0)
     {
-        printf("TODO");
+        ENCODING = 1;
+    }
+    else if (strcmp(argv[1], "decode") == 0)
+    {
+        ENCODING = 0;
+    }
+    else
+    {
+        printf("Unknown mode %s", argv[1]);
         return 1;
     }
+
     printf("Opening input file %s\n", argv[2]);
     int fd = open(argv[2], O_RDONLY);
     if (fd == -1)
@@ -53,7 +64,17 @@ int main(int argc, char *argv[])
         }
     };
     uint32_t outlen;
-    unsigned char *out = huffman_encode(memblock, sb.st_size, &outlen);
+
+    unsigned char *out;
+    if (ENCODING == 1)
+    {
+        out = huffman_encode(memblock, sb.st_size, &outlen);
+    }
+    else
+    {
+        //   out = huffman_decode(memblock, &outlen);
+    };
+
     if (out == NULL)
     {
         perror("Huffman failed");
