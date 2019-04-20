@@ -421,9 +421,12 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
         link.href = objectUrl;
         link.download = name;
         link.click();
-        // TODO: Do we need to revoke it here?
-        URL.revokeObjectURL(objectUrl);
-        // TODO: We also need to remove "link" from DOM to clear memory
+        setTimeout(function () {
+            // TODO: How to make it proper way?
+            // Is it possible to have a callback when link is downloaded?
+            URL.revokeObjectURL(objectUrl);
+            document.body.removeChild(link);
+        }, 60000);
     }
     function onInputReadFile(input, callback) {
         input.onchange = function () {
