@@ -14,8 +14,9 @@ function status(text: string) {
 }
 
 const packWaInput = byId("pack-wa-input") as HTMLInputElement;
-const unpackTsInput = byId("unpack-ts-input") as HTMLInputElement;
+const unpackWaInput = byId("unpack-wa-input") as HTMLInputElement;
 const packTsInput = byId("pack-ts-input") as HTMLInputElement;
+const unpackTsInput = byId("unpack-ts-input") as HTMLInputElement;
 console.info("Starting");
 status("Starting");
 
@@ -138,7 +139,11 @@ async function start() {
         _huffman_encode: (
             pointerToInput: number,
             inputLength: number,
-            pointerToResultOutput: number
+            pointerToResultOutputLength: number
+        ) => number;
+        _huffman_decode: (
+            pointerToInput: number,
+            pointerToResultOutputLength: number
         ) => number;
         _my_malloc: (size: number) => number;
         _my_free: (pointerToFree: number) => void;
@@ -178,6 +183,36 @@ async function start() {
         wa._my_free(pointerToResult);
         (window as any).packedData = packedData;
         downloadBuffer(fileName + ".huffman", packedData);
+        toggleButtonsDisabled(false);
+        status("Done");
+    });
+
+    onInputReadFile(unpackWaInput, (fileData, fileName) => {
+        console.info(`Source size = ${fileData.byteLength}`);
+        status("Allocating");
+        const pointerToSrc = wa._my_malloc(fileData.byteLength);
+        heapu8.set(fileData, pointerToSrc);
+        const pointerToResultSize = wa._my_malloc(4);
+        status("Unpacking");
+
+        const pointerToResult = reportTime(() =>
+            wa._huffman_decode(pointerToSrc, pointerToResultSize)
+        );
+
+        wa._my_free(pointerToSrc);
+        status("Unpacking done");
+        const size = new Uint32Array(
+            heapu8.slice(pointerToResultSize, pointerToResultSize + 4).buffer
+        )[0];
+        console.info(`Unpacked size = ${size}`);
+        wa._my_free(pointerToResultSize);
+        const unpackedData = heapu8.slice(
+            pointerToResult,
+            pointerToResult + size
+        );
+        wa._my_free(pointerToResult);
+        (window as any).unpackedData = unpackedData;
+        downloadBuffer(fileName.replace(".huffman", ""), unpackedData);
         toggleButtonsDisabled(false);
         status("Done");
     });

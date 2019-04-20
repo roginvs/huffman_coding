@@ -37,7 +37,7 @@
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header">
                         <h4 class="my-0 font-weight-normal">
-                            Webassembly pack
+                            Webassembly encode
                         </h4>
                     </div>
                     <div class="card-body">
@@ -60,7 +60,53 @@
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header">
                         <h4 class="my-0 font-weight-normal">
-                            TS unpack
+                            Webassembly decode
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <input
+                            type="file"
+                            class="file"
+                            id="unpack-wa-input"
+                            style="display: none;"
+                        />
+                        <button
+                            type="button"
+                            class="btn btn-lg btn-block btn-outline-primary"
+                            onclick="document.getElementById('unpack-wa-input').click();"
+                        >
+                            Select file
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h4 class="my-0 font-weight-normal">
+                            Typescript encode
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <input
+                            type="file"
+                            class="file"
+                            id="pack-ts-input"
+                            style="display: none;"
+                        />
+                        <button
+                            type="button"
+                            class="btn btn-lg btn-block btn-outline-primary"
+                            onclick="document.getElementById('pack-ts-input').click();"
+                        >
+                            Select file
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h4 class="my-0 font-weight-normal">
+                            Typescript decode
                         </h4>
                     </div>
                     <div class="card-body">
@@ -75,29 +121,6 @@
                             type="button"
                             class="btn btn-lg btn-block btn-outline-primary"
                             onclick="document.getElementById('unpack-ts-input').click();"
-                        >
-                            Select file
-                        </button>
-                    </div>
-                </div>
-
-                <div class="card mb-4 shadow-sm">
-                    <div class="card-header">
-                        <h4 class="my-0 font-weight-normal">
-                            TS pack
-                        </h4>
-                    </div>
-                    <div class="card-body">
-                        <input
-                            type="file"
-                            class="file"
-                            id="pack-ts-input"
-                            style="display: none;"
-                        />
-                        <button
-                            type="button"
-                            class="btn btn-lg btn-block btn-outline-primary"
-                            onclick="document.getElementById('pack-ts-input').click();"
                         >
                             Select file
                         </button>

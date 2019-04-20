@@ -403,8 +403,9 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
         statusDiv.innerText = text;
     }
     var packWaInput = byId("pack-wa-input");
-    var unpackTsInput = byId("unpack-ts-input");
+    var unpackWaInput = byId("unpack-wa-input");
     var packTsInput = byId("pack-ts-input");
+    var unpackTsInput = byId("unpack-ts-input");
     console.info("Starting");
     status("Starting");
     function toggleButtonsDisabled(newStatus) {
@@ -420,7 +421,9 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
         link.href = objectUrl;
         link.download = name;
         link.click();
+        // TODO: Do we need to revoke it here?
         URL.revokeObjectURL(objectUrl);
+        // TODO: We also need to remove "link" from DOM to clear memory
     }
     function onInputReadFile(input, callback) {
         input.onchange = function () {
@@ -538,6 +541,28 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
                             wa._my_free(pointerToResult);
                             window.packedData = packedData;
                             downloadBuffer(fileName + ".huffman", packedData);
+                            toggleButtonsDisabled(false);
+                            status("Done");
+                        });
+                        onInputReadFile(unpackWaInput, function (fileData, fileName) {
+                            console.info("Source size = " + fileData.byteLength);
+                            status("Allocating");
+                            var pointerToSrc = wa._my_malloc(fileData.byteLength);
+                            heapu8.set(fileData, pointerToSrc);
+                            var pointerToResultSize = wa._my_malloc(4);
+                            status("Unpacking");
+                            var pointerToResult = reportTime(function () {
+                                return wa._huffman_decode(pointerToSrc, pointerToResultSize);
+                            });
+                            wa._my_free(pointerToSrc);
+                            status("Unpacking done");
+                            var size = new Uint32Array(heapu8.slice(pointerToResultSize, pointerToResultSize + 4).buffer)[0];
+                            console.info("Unpacked size = " + size);
+                            wa._my_free(pointerToResultSize);
+                            var unpackedData = heapu8.slice(pointerToResult, pointerToResult + size);
+                            wa._my_free(pointerToResult);
+                            window.unpackedData = unpackedData;
+                            downloadBuffer(fileName.replace(".huffman", ""), unpackedData);
                             toggleButtonsDisabled(false);
                             status("Done");
                         });
