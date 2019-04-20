@@ -10,7 +10,7 @@ for f in "zero" "one" "fibonachi10" "fibonachi30" "hpmor_ru.html"; do
    rm "test/$f.huffman" 
  fi
  echo "Packing 'test/$f' with C packer"
- ./1 "test/$f" "test/$f.tmp"
+ ./1 encode "test/$f" "test/$f.tmp"
  echo "Packing $f with TS packer"
  ./node_modules/.bin/ts-node -T main.ts encode "test/$f" "test/$f.huffman"
  echo "Comparing C and TS" 

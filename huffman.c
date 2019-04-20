@@ -387,3 +387,22 @@ unsigned char *huffman_encode(unsigned char *in, uint32_t len, uint32_t *outlen)
     debug("Done\n");
     return out;
 };
+
+EMSCRIPTEN_KEEPALIVE
+unsigned char *huffman_decode(unsigned char *in, uint32_t *outlen)
+{
+    debug("Checking header magic\n");
+    if (in[0] != magic[0] ||
+        in[1] != magic[1] || in[2] != magic[2] || in[3] != magic[3])
+    {
+        debug("Header is not correct");
+        return NULL;
+    }
+
+    *outlen = *(uint32_t *)&in[4];
+
+    //
+
+    //
+    debug("Creating buffer for counts and counting\n");
+}

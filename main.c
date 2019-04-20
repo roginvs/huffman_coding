@@ -22,13 +22,18 @@ gcc -Wall -o 1 main.c && ./1 hpmor_ru.html hpmor_ru.html.c.huffman
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3)
+    if (argc != 4)
     {
         printf("Use: %s <in_file> <out_file>\n", argv[0]);
         return 1;
     }
-    printf("Opening input file %s\n", argv[1]);
-    int fd = open(argv[1], O_RDONLY);
+    if (strcmp(argv[1], "encode") != 0)
+    {
+        printf("TODO");
+        return 1;
+    }
+    printf("Opening input file %s\n", argv[2]);
+    int fd = open(argv[2], O_RDONLY);
     if (fd == -1)
     {
         perror("Error opening input file");
@@ -55,7 +60,7 @@ int main(int argc, char *argv[])
         exit(1);
     };
     printf("Original len=%lu, compressed len=%u\n", sb.st_size, outlen);
-    int fd_out = open(argv[2], O_RDWR | O_CREAT | O_TRUNC, 0666);
+    int fd_out = open(argv[3], O_RDWR | O_CREAT | O_TRUNC, 0666);
     if (fd_out == -1)
     {
         perror("Error opening output file");
@@ -74,7 +79,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     memcpy(out_file, out, outlen);
-    printf("Outfile written into %s\n", argv[2]);
+    printf("Outfile written into %s\n", argv[3]);
     free(out);
 
     if (sb.st_size != 0)
