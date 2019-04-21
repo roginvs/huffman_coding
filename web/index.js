@@ -408,8 +408,13 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
     var unpackTsInput = byId("unpack-ts-input");
     console.info("Starting");
     status("Starting");
-    function toggleButtonsDisabled(newStatus) {
-        document.querySelectorAll("button").forEach(function (b) { return (b.disabled = newStatus); });
+    function toggleButtonsDisabled(isDisabled) {
+        // document.querySelectorAll("button").forEach(b => (b.disabled = isDisabled));
+        document.querySelectorAll(".container").forEach(function (elem) {
+            if (elem instanceof HTMLElement) {
+                elem.style.display = isDisabled ? "none" : "";
+            }
+        });
     }
     function downloadBuffer(name, data) {
         var objectUrl = URL.createObjectURL(new Blob([data.buffer], {
@@ -469,7 +474,7 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
     }
     function start() {
         return __awaiter(this, void 0, void 0, function () {
-            var TOTAL_MEMORY, memory, heapu8, heap32, DYNAMIC_BASE, DYNAMICTOP_PTR, module, imports, inst, wa;
+            var TOTAL_MEMORY, memory, heapu8, heap32, DYNAMIC_BASE, DYNAMICTOP_PTR, wamodule, imports, inst, wa;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -489,7 +494,7 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
                                 .then(function (response) { return response.arrayBuffer(); })
                                 .then(function (bytes) { return WebAssembly.compile(bytes); })];
                     case 1:
-                        module = _a.sent();
+                        wamodule = _a.sent();
                         imports = {
                             env: {
                                 ___setErrNo: function (n) { return console.error("Got error " + n); },
@@ -517,7 +522,7 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
                                 memory: memory
                             }
                         };
-                        return [4 /*yield*/, WebAssembly.instantiate(module, imports)];
+                        return [4 /*yield*/, WebAssembly.instantiate(wamodule, imports)];
                     case 2:
                         inst = _a.sent();
                         wa = inst.exports;
