@@ -103,7 +103,7 @@ async function start() {
     heap32[DYNAMICTOP_PTR >> 2] = DYNAMIC_BASE;
 
     status("Fetching and building");
-    const module = await fetch("huffman.wasm")
+    const wamodule = await fetch("huffman.wasm")
         .then(response => response.arrayBuffer())
         .then(bytes => WebAssembly.compile(bytes));
     const imports = {
@@ -137,7 +137,7 @@ async function start() {
             memory
         }
     };
-    const inst = await WebAssembly.instantiate(module, imports);
+    const inst = await WebAssembly.instantiate(wamodule, imports);
     const wa = inst.exports as {
         _huffman_encode: (
             pointerToInput: number,
