@@ -439,7 +439,8 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
             status("Reading file");
             var file = input.files ? input.files[0] : undefined;
             if (!file) {
-                status("No file");
+                status("No file was selected");
+                toggleButtonsDisabled(false);
                 return;
             }
             var reader = new FileReader();

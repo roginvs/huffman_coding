@@ -58,7 +58,8 @@ function onInputReadFile(
         status("Reading file");
         const file = input.files ? input.files[0] : undefined;
         if (!file) {
-            status("No file");
+            status("No file was selected");
+            toggleButtonsDisabled(false);
             return;
         }
         const reader = new FileReader();
