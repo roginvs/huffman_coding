@@ -64,3 +64,5 @@ Webassembly реализация работает где-то раза в 4 бы
 Почему-то WebAssembly версия падает на файле `hpmor_ru.html.huffman.huffman` (два раза сжатый `./test/hpmor_ru.html`). При этом C версия пакует нормально и полученный файл так же распаковывается. Возможно где-то неправильно используется `emscripten`.
 
 Update: Почему-то Webassembly теперь падает на `hpmor_ru.html.huffman.huffman.huffman`
+
+Update2: Теперь почему-то вообще не падает, хотя wasm файл не поменялся.
