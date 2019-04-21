@@ -20,8 +20,13 @@ const unpackTsInput = byId("unpack-ts-input") as HTMLInputElement;
 console.info("Starting");
 status("Starting");
 
-function toggleButtonsDisabled(newStatus: boolean) {
-    document.querySelectorAll("button").forEach(b => (b.disabled = newStatus));
+function toggleButtonsDisabled(isDisabled: boolean) {
+    // document.querySelectorAll("button").forEach(b => (b.disabled = isDisabled));
+    document.querySelectorAll(".container").forEach(elem => {
+        if (elem instanceof HTMLElement) {
+            elem.style.display = isDisabled ? "none" : "";
+        }
+    });
 }
 
 function downloadBuffer(name: string, data: Uint8Array) {
