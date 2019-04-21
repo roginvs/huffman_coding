@@ -140,7 +140,18 @@ async function start() {
             //    console.info("Get DYNAMICTOP_PTR");
             //    return DYNAMICTOP_PTR;
             //},
-            memory
+            memory,
+            _my_printf: (pos: number) => {
+                let i = 0;
+                while (heapu8[pos + i] !== 0) {
+                    i++;
+                }
+                console.info(
+                    String.fromCharCode(
+                        ...Array.from(heapu8.slice(pos, pos + i))
+                    )
+                );
+            }
         }
     };
     const inst = await WebAssembly.instantiate(wamodule, imports);

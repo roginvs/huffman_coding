@@ -18,6 +18,9 @@ void my_free(void *cur)
 {
     return free(cur);
 };
+
+    // extern void my_printf(char *fmt);
+
 #else
 #include <stdio.h>
 #include <stdarg.h>
@@ -33,6 +36,8 @@ void debug(char *fmt, ...)
     vprintf(fmt, args);
     va_end(args);
 #endif
+#else
+    // my_printf(fmt);
 #endif
 }
 

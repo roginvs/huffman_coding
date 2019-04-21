@@ -43,6 +43,26 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+};
+var __spread = (this && this.__spread) || function () {
+    for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
+    return ar;
+};
 define("huffman", ["require", "exports"], function (require, exports) {
     "use strict";
     exports.__esModule = true;
@@ -520,7 +540,14 @@ define("index", ["require", "exports", "huffman"], function (require, exports, h
                                 //    console.info("Get DYNAMICTOP_PTR");
                                 //    return DYNAMICTOP_PTR;
                                 //},
-                                memory: memory
+                                memory: memory,
+                                _my_printf: function (pos) {
+                                    var i = 0;
+                                    while (heapu8[pos + i] !== 0) {
+                                        i++;
+                                    }
+                                    console.info(String.fromCharCode.apply(String, __spread(Array.from(heapu8.slice(pos, pos + i)))));
+                                }
                             }
                         };
                         return [4 /*yield*/, WebAssembly.instantiate(wamodule, imports)];
